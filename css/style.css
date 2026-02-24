@@ -617,6 +617,7 @@ section {
     padding: 0.25rem;
     border-radius: 50%;
     transition: all 0.3s ease;
+    color: var(--text-gray);
 }
 
 .hot-btn:hover {

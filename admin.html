@@ -1,0 +1,867 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>后台管理 - 爱诗伦 ACELYNN</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/admin.css">
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+</head>
+<body>
+    <div class="login-page" id="loginPage">
+        <div class="login-box">
+            <div class="login-logo">
+                <h2>后台管理系统</h2>
+            </div>
+            <form id="loginForm">
+                <div class="form-group">
+                    <label>用户名</label>
+                    <input type="text" id="loginUsername" required placeholder="请输入用户名">
+                </div>
+                <div class="form-group">
+                    <label>密码</label>
+                    <input type="password" id="loginPassword" required placeholder="请输入密码">
+                </div>
+                <button type="submit" class="btn btn-primary btn-full">登录</button>
+            </form>
+        </div>
+    </div>
+
+    <div class="admin-layout" id="adminLayout" style="display:none;">
+        <aside class="admin-sidebar">
+            <div class="admin-logo">
+                <span>后台管理</span>
+            </div>
+            <nav class="admin-nav">
+                <a href="#" class="admin-nav-link active" data-tab="home">🏠 首页内容</a>
+                <a href="#" class="admin-nav-link" data-tab="about">👥 关于我们</a>
+                <a href="#" class="admin-nav-link" data-tab="products">📦 产品管理</a>
+                <a href="#" class="admin-nav-link" data-tab="news">📰 新闻资讯</a>
+                <a href="#" class="admin-nav-link" data-tab="contact">📞 联系我们</a>
+                <a href="#" class="admin-nav-link" data-tab="messages">📨 留言管理</a>
+                <a href="#" class="admin-nav-link" data-tab="export">💾 数据导出</a>
+                <a href="#" class="admin-nav-link" data-tab="settings">⚙️ 账号设置</a>
+            </nav>
+            <div class="admin-actions">
+                <button class="reset-btn" id="resetBtn">🔄 重置数据</button>
+                <button class="logout-btn" id="logoutBtn">🚪 退出登录</button>
+                <a href="index.html" class="back-to-site">← 返回网站</a>
+            </div>
+        </aside>
+
+        <main class="admin-main">
+            <div class="admin-header">
+                <h1>后台管理系统</h1>
+            </div>
+
+            <div class="admin-content">
+                <section class="admin-tab active" id="tab-home">
+                    <div class="admin-toolbar">
+                        <h2>首页内容编辑</h2>
+                    </div>
+                    <div class="content-forms">
+                        <div class="form-section" id="section-home-hero">
+                            <div class="form-section-header" onclick="toggleSection('section-home-hero')">
+                                <h3>🎯 Hero 区域</h3>
+                                <span class="form-section-toggle">▼</span>
+                            </div>
+                            <div class="form-section-content">
+                                <form id="homeHeroForm">
+                                    <div class="form-group-row">
+                                        <div class="form-group">
+                                            <label class="lang-label"><span class="lang-tag">中</span> 主标题</label>
+                                            <input type="text" id="homeHeroTitleZh">
+                                        </div>
+                                        <div class="form-group">
+                                            <label class="lang-label"><span class="lang-tag">EN</span> 主标题</label>
+                                            <input type="text" id="homeHeroTitleEn">
+                                        </div>
+                                    </div>
+                                    <div class="form-group-row">
+                                        <div class="form-group">
+                                            <label class="lang-label"><span class="lang-tag">中</span> 副标题</label>
+                                            <input type="text" id="homeHeroSubtitleZh">
+                                        </div>
+                                        <div class="form-group">
+                                            <label class="lang-label"><span class="lang-tag">EN</span> 副标题</label>
+                                            <input type="text" id="homeHeroSubtitleEn">
+                                        </div>
+                                    </div>
+                                    <div class="form-actions">
+                                        <button type="submit" class="btn btn-primary">保存</button>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+
+                        <div class="form-section collapsed" id="section-home-features">
+                            <div class="form-section-header" onclick="toggleSection('section-home-features')">
+                                <h3>⭐ 我们的优势</h3>
+                                <span class="form-section-toggle">▼</span>
+                            </div>
+                            <div class="form-section-content">
+                                <form id="homeFeaturesForm">
+                                    <div class="form-group-row">
+                                        <div class="form-group">
+                                            <label class="lang-label"><span class="lang-tag">中</span> 标题</label>
+                                            <input type="text" id="homeFeaturesTitleZh">
+                                        </div>
+                                        <div class="form-group">
+                                            <label class="lang-label"><span class="lang-tag">EN</span> 标题</label>
+                                            <input type="text" id="homeFeaturesTitleEn">
+                                        </div>
+                                    </div>
+                                    <div class="form-group-row">
+                                        <div class="form-group">
+                                            <label class="lang-label"><span class="lang-tag">中</span> 副标题</label>
+                                            <input type="text" id="homeFeaturesSubtitleZh">
+                                        </div>
+                                        <div class="form-group">
+                                            <label class="lang-label"><span class="lang-tag">EN</span> 副标题</label>
+                                            <input type="text" id="homeFeaturesSubtitleEn">
+                                        </div>
+                                    </div>
+                                    <div style="margin-top: 1.5rem;">
+                                        <h4 style="color: var(--text-dark); margin-bottom: 1rem;">优势项 1</h4>
+                                        <div class="form-group-row">
+                                            <div class="form-group">
+                                                <label>图标</label>
+                                                <input type="text" id="homeFeature1Icon" placeholder="例如: 🔬">
+                                            </div>
+                                            <div class="form-group">
+                                                <label class="lang-label"><span class="lang-tag">中</span> 标题</label>
+                                                <input type="text" id="homeFeature1TitleZh">
+                                            </div>
+                                            <div class="form-group">
+                                                <label class="lang-label"><span class="lang-tag">EN</span> 标题</label>
+                                                <input type="text" id="homeFeature1TitleEn">
+                                            </div>
+                                        </div>
+                                        <div class="form-group-row">
+                                            <div class="form-group">
+                                                <label class="lang-label"><span class="lang-tag">中</span> 描述</label>
+                                                <input type="text" id="homeFeature1DescZh">
+                                            </div>
+                                            <div class="form-group">
+                                                <label class="lang-label"><span class="lang-tag">EN</span> 描述</label>
+                                                <input type="text" id="homeFeature1DescEn">
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div style="margin-top: 1.5rem;">
+                                        <h4 style="color: var(--text-dark); margin-bottom: 1rem;">优势项 2</h4>
+                                        <div class="form-group-row">
+                                            <div class="form-group">
+                                                <label>图标</label>
+                                                <input type="text" id="homeFeature2Icon" placeholder="例如: ⚗️">
+                                            </div>
+                                            <div class="form-group">
+                                                <label class="lang-label"><span class="lang-tag">中</span> 标题</label>
+                                                <input type="text" id="homeFeature2TitleZh">
+                                            </div>
+                                            <div class="form-group">
+                                                <label class="lang-label"><span class="lang-tag">EN</span> 标题</label>
+                                                <input type="text" id="homeFeature2TitleEn">
+                                            </div>
+                                        </div>
+                                        <div class="form-group-row">
+                                            <div class="form-group">
+                                                <label class="lang-label"><span class="lang-tag">中</span> 描述</label>
+                                                <input type="text" id="homeFeature2DescZh">
+                                            </div>
+                                            <div class="form-group">
+                                                <label class="lang-label"><span class="lang-tag">EN</span> 描述</label>
+                                                <input type="text" id="homeFeature2DescEn">
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div style="margin-top: 1.5rem;">
+                                        <h4 style="color: var(--text-dark); margin-bottom: 1rem;">优势项 3</h4>
+                                        <div class="form-group-row">
+                                            <div class="form-group">
+                                                <label>图标</label>
+                                                <input type="text" id="homeFeature3Icon" placeholder="例如: 🤝">
+                                            </div>
+                                            <div class="form-group">
+                                                <label class="lang-label"><span class="lang-tag">中</span> 标题</label>
+                                                <input type="text" id="homeFeature3TitleZh">
+                                            </div>
+                                            <div class="form-group">
+                                                <label class="lang-label"><span class="lang-tag">EN</span> 标题</label>
+                                                <input type="text" id="homeFeature3TitleEn">
+                                            </div>
+                                        </div>
+                                        <div class="form-group-row">
+                                            <div class="form-group">
+                                                <label class="lang-label"><span class="lang-tag">中</span> 描述</label>
+                                                <input type="text" id="homeFeature3DescZh">
+                                            </div>
+                                            <div class="form-group">
+                                                <label class="lang-label"><span class="lang-tag">EN</span> 描述</label>
+                                                <input type="text" id="homeFeature3DescEn">
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div id="homeFeaturesItems"></div>
+                                    <div class="form-actions">
+                                        <button type="submit" class="btn btn-primary">保存</button>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <section class="admin-tab" id="tab-about">
+                    <div class="admin-toolbar">
+                        <h2>关于我们编辑</h2>
+                    </div>
+                    <div class="content-forms">
+                        <div class="form-section" id="section-about-titles">
+                            <div class="form-section-header" onclick="toggleSection('section-about-titles')">
+                                <h3>📝 页面标题</h3>
+                                <span class="form-section-toggle">▼</span>
+                            </div>
+                            <div class="form-section-content">
+                                <form id="aboutTitleForm">
+                                    <div class="form-group-row">
+                                        <div class="form-group">
+                                            <label class="lang-label"><span class="lang-tag">中</span> 页面标题</label>
+                                            <input type="text" id="aboutTitleZh">
+                                        </div>
+                                        <div class="form-group">
+                                            <label class="lang-label"><span class="lang-tag">EN</span> 页面标题</label>
+                                            <input type="text" id="aboutTitleEn">
+                                        </div>
+                                    </div>
+                                    <div class="form-group-row">
+                                        <div class="form-group">
+                                            <label class="lang-label"><span class="lang-tag">中</span> 公司简介标题</label>
+                                            <input type="text" id="aboutCompanyTitleZh">
+                                        </div>
+                                        <div class="form-group">
+                                            <label class="lang-label"><span class="lang-tag">EN</span> 公司简介标题</label>
+                                            <input type="text" id="aboutCompanyTitleEn">
+                                        </div>
+                                    </div>
+                                    <div class="form-group-row">
+                                        <div class="form-group">
+                                            <label class="lang-label"><span class="lang-tag">中</span> 企业使命标题</label>
+                                            <input type="text" id="aboutMissionTitleZh">
+                                        </div>
+                                        <div class="form-group">
+                                            <label class="lang-label"><span class="lang-tag">EN</span> 企业使命标题</label>
+                                            <input type="text" id="aboutMissionTitleEn">
+                                        </div>
+                                    </div>
+                                    <div class="form-group-row">
+                                        <div class="form-group">
+                                            <label class="lang-label"><span class="lang-tag">中</span> 企业愿景标题</label>
+                                            <input type="text" id="aboutVisionTitleZh">
+                                        </div>
+                                        <div class="form-group">
+                                            <label class="lang-label"><span class="lang-tag">EN</span> 企业愿景标题</label>
+                                            <input type="text" id="aboutVisionTitleEn">
+                                        </div>
+                                    </div>
+                                    <div class="form-group-row">
+                                        <div class="form-group">
+                                            <label class="lang-label"><span class="lang-tag">中</span> 核心价值观标题</label>
+                                            <input type="text" id="aboutValuesTitleZh">
+                                        </div>
+                                        <div class="form-group">
+                                            <label class="lang-label"><span class="lang-tag">EN</span> 核心价值观标题</label>
+                                            <input type="text" id="aboutValuesTitleEn">
+                                        </div>
+                                    </div>
+                                    <div class="form-actions">
+                                        <button type="submit" class="btn btn-primary">保存</button>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+
+                        <div class="form-section collapsed" id="section-about-company">
+                            <div class="form-section-header" onclick="toggleSection('section-about-company')">
+                                <h3>🏢 公司信息</h3>
+                                <span class="form-section-toggle">▼</span>
+                            </div>
+                            <div class="form-section-content">
+                                <form id="companyForm">
+                                    <div class="form-group">
+                                        <label class="lang-label"><span class="lang-tag">中</span> 公司简介</label>
+                                        <textarea id="aboutText" rows="4"></textarea>
+                                    </div>
+                                    <div class="form-group">
+                                        <label class="lang-label"><span class="lang-tag">EN</span> 公司简介</label>
+                                        <textarea id="aboutTextEn" rows="4"></textarea>
+                                    </div>
+                                    <div class="form-group">
+                                        <label class="lang-label"><span class="lang-tag">中</span> 公司简介（第二段）</label>
+                                        <textarea id="aboutText2" rows="4"></textarea>
+                                    </div>
+                                    <div class="form-group">
+                                        <label class="lang-label"><span class="lang-tag">EN</span> 公司简介（第二段）</label>
+                                        <textarea id="aboutText2En" rows="4"></textarea>
+                                    </div>
+                                    <div class="form-group-row">
+                                        <div class="form-group">
+                                            <label class="lang-label"><span class="lang-tag">中</span> 企业使命</label>
+                                            <textarea id="missionText" rows="3"></textarea>
+                                        </div>
+                                        <div class="form-group">
+                                            <label class="lang-label"><span class="lang-tag">EN</span> 企业使命</label>
+                                            <textarea id="missionTextEn" rows="3"></textarea>
+                                        </div>
+                                    </div>
+                                    <div class="form-group-row">
+                                        <div class="form-group">
+                                            <label class="lang-label"><span class="lang-tag">中</span> 企业愿景</label>
+                                            <textarea id="visionText" rows="3"></textarea>
+                                        </div>
+                                        <div class="form-group">
+                                            <label class="lang-label"><span class="lang-tag">EN</span> 企业愿景</label>
+                                            <textarea id="visionTextEn" rows="3"></textarea>
+                                        </div>
+                                    </div>
+                                    <div class="form-group-row">
+                                        <div class="form-group">
+                                            <label class="lang-label"><span class="lang-tag">中</span> 核心价值观</label>
+                                            <textarea id="valuesText" rows="3"></textarea>
+                                        </div>
+                                        <div class="form-group">
+                                            <label class="lang-label"><span class="lang-tag">EN</span> 核心价值观</label>
+                                            <textarea id="valuesTextEn" rows="3"></textarea>
+                                        </div>
+                                    </div>
+                                    <div class="form-actions">
+                                        <button type="submit" class="btn btn-primary">保存</button>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <section class="admin-tab" id="tab-products">
+                    <div class="admin-toolbar">
+                        <h2>产品管理</h2>
+                        <div class="admin-toolbar-content">
+                            <div class="admin-search-container">
+                                <div class="nav-search-wrapper">
+                                    <span class="search-icon-nav">🔍</span>
+                                    <input type="text" id="productAdminSearch" class="nav-search-input" placeholder="搜索产品名称、CAS号、货号...">
+                                </div>
+                            </div>
+                            <div class="toolbar-actions">
+                                <button class="btn btn-secondary" id="batchDeleteBtn" onclick="batchDeleteProducts()">🗑️ 批量删除</button>
+                                <button class="btn btn-secondary" id="downloadTemplateBtn">📋 下载模板</button>
+                                <label class="btn btn-secondary">
+                                    📂 导入Excel
+                                    <input type="file" id="excelImport" accept=".xlsx,.xls" style="display:none;">
+                                </label>
+                                <button class="btn btn-primary" id="addProductBtn">+ 添加产品</button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="table-container">
+                        <table class="admin-table">
+                            <thead>
+                                <tr>
+                                    <th style="width: 40px;">
+                                        <input type="checkbox" id="selectAllProducts" onchange="toggleSelectAll()">
+                                    </th>
+                                    <th>产品名称</th>
+                                    <th>化学名称</th>
+                                    <th>CAS号</th>
+                                    <th>产品编号</th>
+                                    <th>纯度</th>
+                                    <th>价格</th>
+                                    <th style="width: 100px;">热门</th>
+                                    <th>操作</th>
+                                </tr>
+                            </thead>
+                            <tbody id="productsTable">
+                            </tbody>
+                        </table>
+                    </div>
+                </section>
+
+                <section class="admin-tab" id="tab-news">
+                    <div class="admin-toolbar">
+                        <h2>新闻资讯</h2>
+                        <button class="btn btn-primary" id="addNewsBtn">+ 添加新闻</button>
+                    </div>
+                    <div class="table-container">
+                        <table class="admin-table">
+                            <thead>
+                                <tr>
+                                    <th>标题</th>
+                                    <th>日期</th>
+                                    <th>操作</th>
+                                </tr>
+                            </thead>
+                            <tbody id="newsTable">
+                            </tbody>
+                        </table>
+                    </div>
+                </section>
+
+                <section class="admin-tab" id="tab-contact">
+                    <div class="admin-toolbar">
+                        <h2>联系我们编辑</h2>
+                    </div>
+                    <div class="content-forms">
+                        <div class="form-section collapsed" id="section-contact-text">
+                            <div class="form-section-header" onclick="toggleSection('section-contact-text')">
+                                <h3>📝 页面文本</h3>
+                                <span class="form-section-toggle">▼</span>
+                            </div>
+                            <div class="form-section-content">
+                                <form id="contactTextForm">
+                                    <div class="form-group-row">
+                                        <div class="form-group">
+                                            <label class="lang-label"><span class="lang-tag">中</span> 页面标题</label>
+                                            <input type="text" id="contactTitleZh">
+                                        </div>
+                                        <div class="form-group">
+                                            <label class="lang-label"><span class="lang-tag">EN</span> 页面标题</label>
+                                            <input type="text" id="contactTitleEn">
+                                        </div>
+                                    </div>
+                                    <div class="form-group-row">
+                                        <div class="form-group">
+                                            <label class="lang-label"><span class="lang-tag">中</span> 联系方式标题</label>
+                                            <input type="text" id="contactInfoTitleZh">
+                                        </div>
+                                        <div class="form-group">
+                                            <label class="lang-label"><span class="lang-tag">EN</span> 联系方式标题</label>
+                                            <input type="text" id="contactInfoTitleEn">
+                                        </div>
+                                    </div>
+                                    <div class="form-group-row">
+                                        <div class="form-group">
+                                            <label class="lang-label"><span class="lang-tag">中</span> 地址标签</label>
+                                            <input type="text" id="contactAddressLabelZh">
+                                        </div>
+                                        <div class="form-group">
+                                            <label class="lang-label"><span class="lang-tag">EN</span> 地址标签</label>
+                                            <input type="text" id="contactAddressLabelEn">
+                                        </div>
+                                    </div>
+                                    <div class="form-group-row">
+                                        <div class="form-group">
+                                            <label class="lang-label"><span class="lang-tag">中</span> 邮箱标签</label>
+                                            <input type="text" id="contactEmailLabelZh">
+                                        </div>
+                                        <div class="form-group">
+                                            <label class="lang-label"><span class="lang-tag">EN</span> 邮箱标签</label>
+                                            <input type="text" id="contactEmailLabelEn">
+                                        </div>
+                                    </div>
+                                    <div class="form-group-row">
+                                        <div class="form-group">
+                                            <label class="lang-label"><span class="lang-tag">中</span> 电话标签</label>
+                                            <input type="text" id="contactPhoneLabelZh">
+                                        </div>
+                                        <div class="form-group">
+                                            <label class="lang-label"><span class="lang-tag">EN</span> 电话标签</label>
+                                            <input type="text" id="contactPhoneLabelEn">
+                                        </div>
+                                    </div>
+                                    <div class="form-group-row">
+                                        <div class="form-group">
+                                            <label class="lang-label"><span class="lang-tag">中</span> 工作时间标签</label>
+                                            <input type="text" id="contactHoursLabelZh">
+                                        </div>
+                                        <div class="form-group">
+                                            <label class="lang-label"><span class="lang-tag">EN</span> 工作时间标签</label>
+                                            <input type="text" id="contactHoursLabelEn">
+                                        </div>
+                                    </div>
+                                    <div class="form-group-row">
+                                        <div class="form-group">
+                                            <label class="lang-label"><span class="lang-tag">中</span> 在线留言标题</label>
+                                            <input type="text" id="contactFormTitleZh">
+                                        </div>
+                                        <div class="form-group">
+                                            <label class="lang-label"><span class="lang-tag">EN</span> 在线留言标题</label>
+                                            <input type="text" id="contactFormTitleEn">
+                                        </div>
+                                    </div>
+                                    <div class="form-group-row">
+                                        <div class="form-group">
+                                            <label class="lang-label"><span class="lang-tag">中</span> 姓名标签</label>
+                                            <input type="text" id="contactNameLabelZh">
+                                        </div>
+                                        <div class="form-group">
+                                            <label class="lang-label"><span class="lang-tag">EN</span> 姓名标签</label>
+                                            <input type="text" id="contactNameLabelEn">
+                                        </div>
+                                    </div>
+                                    <div class="form-group-row">
+                                        <div class="form-group">
+                                            <label class="lang-label"><span class="lang-tag">中</span> 邮箱标签</label>
+                                            <input type="text" id="contactEmailFieldLabelZh">
+                                        </div>
+                                        <div class="form-group">
+                                            <label class="lang-label"><span class="lang-tag">EN</span> 邮箱标签</label>
+                                            <input type="text" id="contactEmailFieldLabelEn">
+                                        </div>
+                                    </div>
+                                    <div class="form-group-row">
+                                        <div class="form-group">
+                                            <label class="lang-label"><span class="lang-tag">中</span> 主题标签</label>
+                                            <input type="text" id="contactSubjectLabelZh">
+                                        </div>
+                                        <div class="form-group">
+                                            <label class="lang-label"><span class="lang-tag">EN</span> 主题标签</label>
+                                            <input type="text" id="contactSubjectLabelEn">
+                                        </div>
+                                    </div>
+                                    <div class="form-group-row">
+                                        <div class="form-group">
+                                            <label class="lang-label"><span class="lang-tag">中</span> 留言内容标签</label>
+                                            <input type="text" id="contactMessageLabelZh">
+                                        </div>
+                                        <div class="form-group">
+                                            <label class="lang-label"><span class="lang-tag">EN</span> 留言内容标签</label>
+                                            <input type="text" id="contactMessageLabelEn">
+                                        </div>
+                                    </div>
+                                    <div class="form-group-row">
+                                        <div class="form-group">
+                                            <label class="lang-label"><span class="lang-tag">中</span> 提交按钮标签</label>
+                                            <input type="text" id="contactSubmitLabelZh">
+                                        </div>
+                                        <div class="form-group">
+                                            <label class="lang-label"><span class="lang-tag">EN</span> 提交按钮标签</label>
+                                            <input type="text" id="contactSubmitLabelEn">
+                                        </div>
+                                    </div>
+                                    <div class="form-actions">
+                                        <button type="submit" class="btn btn-primary">保存</button>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+
+                        <div class="form-section" id="section-contact-info">
+                            <div class="form-section-header" onclick="toggleSection('section-contact-info')">
+                                <h3>📞 联系信息</h3>
+                                <span class="form-section-toggle">▼</span>
+                            </div>
+                            <div class="form-section-content">
+                                <form id="contactInfoForm">
+                                    <div class="form-group">
+                                        <label class="lang-label"><span class="lang-tag">中</span> 公司地址</label>
+                                        <textarea id="contactAddressZh" rows="3"></textarea>
+                                    </div>
+                                    <div class="form-group">
+                                        <label class="lang-label"><span class="lang-tag">EN</span> 公司地址</label>
+                                        <textarea id="contactAddressEn" rows="3"></textarea>
+                                    </div>
+                                    <div class="form-group">
+                                        <label>电子邮箱</label>
+                                        <input type="email" id="contactEmail">
+                                    </div>
+                                    <div class="form-group">
+                                        <label>联系电话</label>
+                                        <input type="text" id="contactPhone">
+                                    </div>
+                                    <div class="form-group">
+                                        <label class="lang-label"><span class="lang-tag">中</span> 工作时间</label>
+                                        <textarea id="contactHoursZh" rows="2"></textarea>
+                                    </div>
+                                    <div class="form-group">
+                                        <label class="lang-label"><span class="lang-tag">EN</span> 工作时间</label>
+                                        <textarea id="contactHoursEn" rows="2"></textarea>
+                                    </div>
+                                    <div class="form-actions">
+                                        <button type="submit" class="btn btn-primary">保存</button>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+
+                        <div class="form-section collapsed" id="section-footer">
+                            <div class="form-section-header" onclick="toggleSection('section-footer')">
+                                <h3>📄 页脚信息</h3>
+                                <span class="form-section-toggle">▼</span>
+                            </div>
+                            <div class="form-section-content">
+                                <form id="footerForm">
+                                    <div class="form-group">
+                                        <label class="lang-label"><span class="lang-tag">中</span> 页脚描述</label>
+                                        <textarea id="footerDescZh" rows="3"></textarea>
+                                    </div>
+                                    <div class="form-group">
+                                        <label class="lang-label"><span class="lang-tag">EN</span> 页脚描述</label>
+                                        <textarea id="footerDescEn" rows="3"></textarea>
+                                    </div>
+                                    <div class="form-group-row">
+                                        <div class="form-group">
+                                            <label class="lang-label"><span class="lang-tag">中</span> 快速链接标题</label>
+                                            <input type="text" id="footerLinksTitleZh">
+                                        </div>
+                                        <div class="form-group">
+                                            <label class="lang-label"><span class="lang-tag">EN</span> 快速链接标题</label>
+                                            <input type="text" id="footerLinksTitleEn">
+                                        </div>
+                                    </div>
+                                    <div class="form-group-row">
+                                        <div class="form-group">
+                                            <label class="lang-label"><span class="lang-tag">中</span> 联系方式标题</label>
+                                            <input type="text" id="footerContactTitleZh">
+                                        </div>
+                                        <div class="form-group">
+                                            <label class="lang-label"><span class="lang-tag">EN</span> 联系方式标题</label>
+                                            <input type="text" id="footerContactTitleEn">
+                                        </div>
+                                    </div>
+                                    <div class="form-group-row">
+                                        <div class="form-group">
+                                            <label class="lang-label"><span class="lang-tag">中</span> 地址（简短）</label>
+                                            <input type="text" id="footerAddressShortZh">
+                                        </div>
+                                        <div class="form-group">
+                                            <label class="lang-label"><span class="lang-tag">EN</span> 地址（简短）</label>
+                                            <input type="text" id="footerAddressShortEn">
+                                        </div>
+                                    </div>
+                                    <div class="form-actions">
+                                        <button type="submit" class="btn btn-primary">保存</button>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <section class="admin-tab" id="tab-messages">
+                    <div class="admin-toolbar">
+                        <h2>留言管理</h2>
+                        <div class="toolbar-actions">
+                            <button class="btn btn-secondary" id="markAllReadBtn">📖 全部已读</button>
+                            <button class="btn btn-secondary" id="clearMessagesBtn">🗑️ 清空留言</button>
+                        </div>
+                    </div>
+                    <div class="table-container">
+                        <table class="admin-table">
+                            <thead>
+                                <tr>
+                                    <th>状态</th>
+                                    <th>姓名</th>
+                                    <th>邮箱</th>
+                                    <th>主题</th>
+                                    <th>日期</th>
+                                    <th>操作</th>
+                                </tr>
+                            </thead>
+                            <tbody id="messagesTable">
+                            </tbody>
+                        </table>
+                        <div id="noMessages" style="display: none; text-align: center; padding: 4rem 0;">
+                            <div style="font-size: 4rem; margin-bottom: 1rem;">📭</div>
+                            <h2 style="color: var(--text-dark); margin-bottom: 0.5rem;">暂无留言</h2>
+                            <p style="color: var(--text-gray);">目前还没有收到用户留言</p>
+                        </div>
+                    </div>
+                </section>
+
+                <div class="modal" id="messageModal">
+                    <div class="modal-content" style="max-width: 600px;">
+                        <div class="modal-header">
+                            <h2>查看留言</h2>
+                            <button class="modal-close">&times;</button>
+                        </div>
+                        <div class="modal-body" id="messageModalBody"></div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary modal-cancel">关闭</button>
+                        </div>
+                    </div>
+                </div>
+
+                <section class="admin-tab" id="tab-export">
+                    <div class="admin-toolbar">
+                        <h2>数据导出</h2>
+                    </div>
+                    <div class="export-section">
+                        <div class="export-card">
+                            <h3>导出产品数据</h3>
+                            <button class="btn btn-primary" id="exportProducts">导出Excel</button>
+                        </div>
+                        <div class="export-card">
+                            <h3>导出所有数据</h3>
+                            <button class="btn btn-secondary" id="exportAll">导出JSON</button>
+                        </div>
+                    </div>
+                </section>
+
+                <section class="admin-tab" id="tab-settings">
+                    <div class="admin-toolbar">
+                        <h2>账号设置</h2>
+                    </div>
+                    <div class="content-forms">
+                        <div class="form-section">
+                            <div class="form-section-header">
+                                <h3>🔑 修改密码</h3>
+                            </div>
+                            <div class="form-section-content">
+                                <form id="passwordForm">
+                                    <div class="form-group">
+                                        <label>当前密码</label>
+                                        <input type="password" id="currentPassword" required>
+                                    </div>
+                                    <div class="form-group">
+                                        <label>新密码</label>
+                                        <input type="password" id="newPassword" required minlength="6">
+                                    </div>
+                                    <div class="form-group">
+                                        <label>确认新密码</label>
+                                        <input type="password" id="confirmPassword" required minlength="6">
+                                    </div>
+                                    <div class="form-actions">
+                                        <button type="submit" class="btn btn-primary">保存修改</button>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+            </div>
+        </main>
+    </div>
+
+    <div class="modal" id="productModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="productModalTitle">添加产品</h2>
+                <button class="modal-close">&times;</button>
+            </div>
+            <form id="productForm">
+                <input type="hidden" id="productId">
+                <div class="form-group-row">
+                    <div class="form-group">
+                        <label class="lang-label"><span class="lang-tag">中</span> 产品名称</label>
+                        <input type="text" id="productName" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="lang-label"><span class="lang-tag">EN</span> 产品名称</label>
+                        <input type="text" id="productNameEn">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>化学名称 (Chemical Name)</label>
+                    <input type="text" id="productChemicalName" placeholder="例如：Proteinase K">
+                </div>
+                <div class="form-group-row">
+                    <div class="form-group">
+                        <label>价格</label>
+                        <input type="text" id="productPrice">
+                    </div>
+                </div>
+                </div>
+                <div class="form-group-row">
+                    <div class="form-group">
+                        <label>CAS号</label>
+                        <input type="text" id="productCasNumber" placeholder="例如：39450-01-6">
+                    </div>
+                    <div class="form-group">
+                        <label>货号</label>
+                        <input type="text" id="productCatalogNumber" placeholder="例如：PK-001">
+                    </div>
+                </div>
+                <div class="form-group-row">
+                    <div class="form-group">
+                        <label>规格</label>
+                        <input type="text" id="productSpecification" placeholder="例如：100mg">
+                    </div>
+                    <div class="form-group">
+                        <label>纯度</label>
+                        <input type="text" id="productPurity" placeholder="例如：≥95% (SDS-PAGE)">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label class="lang-label"><span class="lang-tag">中</span> 产品描述</label>
+                    <textarea id="productDesc" rows="3"></textarea>
+                </div>
+                <div class="form-group">
+                    <label class="lang-label"><span class="lang-tag">EN</span> 产品描述</label>
+                    <textarea id="productDescEn" rows="3"></textarea>
+                </div>
+                <div class="form-group">
+                    <label style="display: flex; align-items: center; gap: 8px;">
+                        <input type="checkbox" id="productIsHot">
+                        <span>标记为热门产品</span>
+                    </label>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary modal-cancel">取消</button>
+                    <button type="submit" class="btn btn-primary">保存</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div class="modal" id="newsModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="newsModalTitle">添加新闻</h2>
+                <button class="modal-close">&times;</button>
+            </div>
+            <form id="newsForm">
+                <input type="hidden" id="newsId">
+                <div class="form-group-row">
+                    <div class="form-group">
+                        <label class="lang-label"><span class="lang-tag">中</span> 标题</label>
+                        <input type="text" id="newsTitle" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="lang-label"><span class="lang-tag">EN</span> 标题</label>
+                        <input type="text" id="newsTitleEn">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label class="lang-label"><span class="lang-tag">中</span> 内容</label>
+                    <textarea id="newsContent" rows="5"></textarea>
+                </div>
+                <div class="form-group">
+                    <label class="lang-label"><span class="lang-tag">EN</span> 内容</label>
+                    <textarea id="newsContentEn" rows="5"></textarea>
+                </div>
+                <div class="form-group">
+                    <label>日期</label>
+                    <input type="date" id="newsDate">
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary modal-cancel">取消</button>
+                    <button type="submit" class="btn btn-primary">保存</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div class="modal" id="duplicateModal">
+        <div class="modal-content" style="max-width: 700px;">
+            <div class="modal-header">
+                <h2>检测到重复产品</h2>
+                <button class="modal-close" onclick="closeDuplicateModal()">&times;</button>
+            </div>
+            <div class="modal-body" style="padding: 2rem;">
+                <div id="duplicateModalContent"></div>
+            </div>
+            <div class="modal-footer" style="gap: 10px; padding: 0 2rem 2rem 2rem;">
+                <button type="button" class="btn btn-secondary" onclick="handleDuplicateChoice('skip')" style="white-space: nowrap;">⏭️ 全部跳过</button>
+                <button type="button" class="btn btn-primary" onclick="handleDuplicateChoice('overwrite')" style="white-space: nowrap;">🔄 全部覆盖</button>
+                <button type="button" class="btn btn-secondary" onclick="handleDuplicateChoice('ask')" style="white-space: nowrap;">❓ 逐个确认</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="js/data.js"></script>
+    <script src="js/admin.js"></script>
+</body>
+</html>

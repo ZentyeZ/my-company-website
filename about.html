@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>关于我们 - 爱诗伦 ACELYNN</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <nav class="navbar">
+        <div class="container">
+            <div class="nav-brand">
+                <img src="images/logo.png" alt="ACELYNN 爱诗伦" class="logo">
+            </div>
+            <div class="nav-search">
+                <div class="nav-search-wrapper">
+                    <span class="search-icon-nav">🔍</span>
+                    <input type="text" id="navSearch" class="nav-search-input" placeholder="搜索产品名称、CAS号、货号..." data-i18n-placeholder="hero.search">
+                </div>
+                <div class="nav-search-suggestions" id="navSearchSuggestions"></div>
+            </div>
+            <div class="nav-menu">
+                <a href="index.html" class="nav-link" data-i18n="nav.home">首页</a>
+                <a href="about.html" class="nav-link active" data-i18n="nav.about">关于我们</a>
+                <a href="products.html" class="nav-link" data-i18n="nav.products">产品中心</a>
+                <a href="news.html" class="nav-link" data-i18n="nav.news">新闻资讯</a>
+                <a href="contact.html" class="nav-link" data-i18n="nav.contact">联系我们</a>
+                <button class="lang-toggle" id="langToggle">EN</button>
+            </div>
+            <div class="hamburger" id="hamburger">
+                <span></span>
+                <span></span>
+                <span></span>
+            </div>
+        </div>
+    </nav>
+
+    <section class="page-header">
+        <div class="container">
+            <h1 class="page-title" data-i18n="about.title">关于我们</h1>
+        </div>
+    </section>
+
+    <section class="about-section">
+        <div class="container">
+            <div class="about-grid">
+                <div class="about-content">
+                    <h2 class="section-title" data-i18n="about.company">公司简介</h2>
+                    <p class="about-text" id="aboutText"></p>
+                    <p class="about-text" id="aboutText2"></p>
+                </div>
+                <div class="about-image">
+                    <div class="image-placeholder">🧬</div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section class="mission-section">
+        <div class="container">
+            <div class="mission-grid">
+                <div class="mission-card">
+                    <div class="mission-icon">🎯</div>
+                    <h3 data-i18n="about.mission">企业使命</h3>
+                    <p id="missionText">以创新生物科技，助力人类健康事业发展</p>
+                </div>
+                <div class="mission-card">
+                    <div class="mission-icon">🌟</div>
+                    <h3 data-i18n="about.vision">企业愿景</h3>
+                    <p id="visionText">成为全球领先的生物科技解决方案提供商</p>
+                </div>
+                <div class="mission-card">
+                    <div class="mission-icon">💡</div>
+                    <h3 data-i18n="about.values">核心价值观</h3>
+                    <p id="valuesText">创新、专业、诚信、共赢</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <script src="js/data.js"></script>
+    <script src="js/main.js"></script>
+</body>
+</html>

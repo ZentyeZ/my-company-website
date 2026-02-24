@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>爱诗伦 ACELYNN - 生物科技</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <nav class="navbar">
+        <div class="container">
+            <div class="nav-brand">
+                <img src="images/logo.png" alt="ACELYNN 爱诗伦" class="logo">
+            </div>
+            <div class="nav-search">
+                <div class="nav-search-wrapper">
+                    <span class="search-icon-nav">🔍</span>
+                    <input type="text" id="navSearch" class="nav-search-input" placeholder="搜索产品名称、CAS号、货号..." data-i18n-placeholder="hero.search">
+                </div>
+                <div class="nav-search-suggestions" id="navSearchSuggestions"></div>
+            </div>
+            <div class="nav-menu">
+                <a href="index.html" class="nav-link active" data-i18n="nav.home">首页</a>
+                <a href="about.html" class="nav-link" data-i18n="nav.about">关于我们</a>
+                <a href="products.html" class="nav-link" data-i18n="nav.products">产品中心</a>
+                <a href="news.html" class="nav-link" data-i18n="nav.news">新闻资讯</a>
+                <a href="contact.html" class="nav-link" data-i18n="nav.contact">联系我们</a>
+                <button class="lang-toggle" id="langToggle">EN</button>
+            </div>
+            <div class="hamburger" id="hamburger">
+                <span></span>
+                <span></span>
+                <span></span>
+            </div>
+        </div>
+    </nav>
+
+    <section class="hero">
+        <div class="hero-overlay"></div>
+        <div class="container">
+            <div class="hero-content">
+                <h1 class="hero-title" data-i18n="hero.title">创新生物科技，引领健康未来</h1>
+                <p class="hero-subtitle" data-i18n="hero.subtitle">ACELYNN 爱诗伦 - 专注于生物科技研发与创新</p>
+                
+                <div class="hero-buttons">
+                    <a href="products.html" class="btn btn-primary" data-i18n="hero.products">查看产品</a>
+                    <a href="contact.html" class="btn btn-secondary" data-i18n="hero.contact">联系我们</a>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section class="features">
+        <div class="container">
+            <div class="section-header">
+                <h2 class="section-title" data-i18n="features.title">我们的优势</h2>
+                <p class="section-subtitle" data-i18n="features.subtitle">专业团队 · 先进技术 · 可靠品质</p>
+            </div>
+            <div class="features-grid">
+                <div class="feature-card">
+                    <div class="feature-icon">🔬</div>
+                    <h3 class="feature-title" data-i18n="features.1.title">研发创新</h3>
+                    <p class="feature-desc" data-i18n="features.1.desc">持续投入研发，引领行业技术创新</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">⚗️</div>
+                    <h3 class="feature-title" data-i18n="features.2.title">品质保证</h3>
+                    <p class="feature-desc" data-i18n="features.2.desc">严格的质量控制体系，确保产品安全可靠</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">🤝</div>
+                    <h3 class="feature-title" data-i18n="features.3.title">专业服务</h3>
+                    <p class="feature-desc" data-i18n="features.3.desc">专业技术团队，提供全方位解决方案</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+
+
+    <script src="js/data.js"></script>
+    <script src="js/main.js"></script>
+</body>
+</html>

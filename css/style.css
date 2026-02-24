@@ -727,7 +727,7 @@ section {
     display: grid;
     grid-template-columns: 1fr 1fr;
     gap: 4rem;
-    align-items: start;
+    align-items: stretch;
 }
 
 .contact-info {
@@ -805,6 +805,25 @@ section {
 .form-group select:focus {
     outline: none;
     border-color: var(--secondary-blue);
+}
+
+.form-error {
+    color: #ff4757;
+    font-size: 0.8rem;
+    margin-top: 0.3rem;
+    padding-left: 0.5rem;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.form-error.show {
+    opacity: 1;
+}
+
+.form-group input.error,
+.form-group textarea.error {
+    border-color: #ff4757;
+    box-shadow: 0 0 0 2px rgba(255, 71, 87, 0.1);
 }
 
 .form-group textarea {

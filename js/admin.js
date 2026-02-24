@@ -904,12 +904,12 @@ function renderMessagesTable() {
             <td>${msg.read ? '已读' : '未读'}</td>
             <td>${msg.name}</td>
             <td>${msg.email}</td>
-            <td>${msg.subject}</td>
+            <td>${msg.phone || '-'}</td>
             <td>${new Date(msg.date).toLocaleString()}</td>
             <td>
-                <button class="btn btn-secondary" onclick="viewMessage(${msg.id})">查看</button>
-                ${!msg.read ? `<button class="btn btn-primary" onclick="markAsRead(${msg.id})">标记已读</button>` : ''}
-                <button class="btn btn-secondary" onclick="deleteMessage(${msg.id})">删除</button>
+                <button class="btn btn-secondary" onclick="viewMessage(${msg.id})"><br/>查看</button>
+                ${!msg.read ? `<button class="btn btn-primary" onclick="markAsRead(${msg.id})"><br/>标记已读</button>` : ''}
+                <button class="btn btn-secondary" onclick="deleteMessage(${msg.id})"><br/>删除</button>
             </td>
         </tr>
     `).join('');
@@ -948,7 +948,7 @@ function viewMessage(id) {
     body.innerHTML = `
         <p><strong>姓名：</strong>${msg.name}</p>
         <p><strong>邮箱：</strong>${msg.email}</p>
-        <p><strong>主题：</strong>${msg.subject}</p>
+        ${msg.phone ? `<p><strong>联系电话：</strong>${msg.phone}</p>` : ''}
         <p><strong>日期：</strong>${new Date(msg.date).toLocaleString()}</p>
         <hr>
         <p><strong>留言内容：</strong></p>

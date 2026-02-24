@@ -138,6 +138,10 @@ function getTextFromData(key, data) {
         case 'contact.subject': return getLocalizedText(data.pages.contact?.subjectLabel);
         case 'contact.message': return getLocalizedText(data.pages.contact?.messageLabel);
         case 'contact.submit': return getLocalizedText(data.pages.contact?.submitLabel);
+        case 'contact.namePlaceholder': return currentLang === 'zh' ? '请输入您的姓名' : 'Please enter your name';
+        case 'contact.emailPlaceholder': return currentLang === 'zh' ? '请输入您的邮箱地址' : 'Please enter your email address';
+        case 'contact.phonePlaceholder': return currentLang === 'zh' ? '请输入您的联系电话' : 'Please enter your phone number';
+        case 'contact.messagePlaceholder': return currentLang === 'zh' ? '请输入您的留言内容' : 'Please enter your message';
         default: return '';
     }
 }
@@ -486,23 +490,140 @@ document.addEventListener('DOMContentLoaded', async () => {
     
     const contactForm = document.getElementById('contactForm');
     if (contactForm) {
+        // 清除错误提示的函数
+        function clearError(fieldName) {
+            const errorElement = document.getElementById(`${fieldName}Error`);
+            const inputElement = document.querySelector(`input[name="${fieldName}"]`) || document.querySelector(`textarea[name="${fieldName}"]`);
+            
+            if (errorElement) {
+                errorElement.textContent = '';
+                errorElement.classList.remove('show');
+            }
+            
+            if (inputElement) {
+                inputElement.classList.remove('error');
+            }
+        }
+        
+        // 显示错误提示的函数
+        function showError(fieldName, message) {
+            const errorElement = document.getElementById(`${fieldName}Error`);
+            const inputElement = document.querySelector(`input[name="${fieldName}"]`) || document.querySelector(`textarea[name="${fieldName}"]`);
+            
+            if (errorElement) {
+                errorElement.textContent = message;
+                errorElement.classList.add('show');
+            }
+            
+            if (inputElement) {
+                inputElement.classList.add('error');
+                inputElement.focus();
+            }
+        }
+        
+        // 为输入框添加输入事件，自动清除错误提示
+        const requiredFields = ['name', 'email', 'message', 'phone'];
+        requiredFields.forEach(field => {
+            const input = document.querySelector(`input[name="${field}"]`) || document.querySelector(`textarea[name="${field}"]`);
+            if (input) {
+                input.addEventListener('input', () => clearError(field));
+            }
+        });
+        
+        // 表单提交处理
         contactForm.addEventListener('submit', (e) => {
             e.preventDefault();
             
-            const formData = new FormData(contactForm);
-            const message = {
-                id: Date.now(),
-                name: formData.get('name'),
-                email: formData.get('email'),
-                subject: formData.get('subject'),
-                message: formData.get('message'),
-                date: new Date().toISOString(),
-                read: false
-            };
+            // 清除所有错误提示
+            requiredFields.forEach(field => clearError(field));
             
-            saveMessage(message);
-            alert(currentLang === 'zh' ? '留言已提交成功！' : 'Message sent successfully!');
-            contactForm.reset();
+            // 自定义表单验证
+            const name = document.querySelector('input[name="name"]').value.trim();
+            const email = document.querySelector('input[name="email"]').value.trim();
+            const message = document.querySelector('textarea[name="message"]').value.trim();
+            
+            let isValid = true;
+            
+            // 验证逻辑
+            if (!name) {
+                showError('name', currentLang === 'zh' ? '请输入您的姓名' : 'Please enter your name');
+                isValid = false;
+            }
+            
+            if (!email) {
+                showError('email', currentLang === 'zh' ? '请输入您的邮箱地址' : 'Please enter your email address');
+                isValid = false;
+            } else {
+                // 简单的邮箱格式验证
+                const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+                if (!emailRegex.test(email)) {
+                    showError('email', currentLang === 'zh' ? '请输入有效的邮箱地址' : 'Please enter a valid email address');
+                    isValid = false;
+                }
+            }
+            
+            if (!message) {
+                showError('message', currentLang === 'zh' ? '请输入您的留言内容' : 'Please enter your message');
+                isValid = false;
+            }
+            
+            // 验证联系电话格式（如果填写了）
+            const phone = document.querySelector('input[name="phone"]').value.trim();
+            if (phone) {
+                // 简单的电话号码格式验证（支持国内外电话号码）
+                const phoneRegex = /^[\+]?[(]?[0-9]{3}[)]?[-\s\.]?[0-9]{3}[-\s\.]?[0-9]{4,6}$/;
+                if (!phoneRegex.test(phone)) {
+                    showError('phone', currentLang === 'zh' ? '请输入有效的联系电话' : 'Please enter a valid phone number');
+                    isValid = false;
+                }
+            }
+            
+            if (isValid) {
+                // 收集表单数据
+                const formData = new FormData(contactForm);
+                const newMessage = {
+                    id: Date.now(),
+                    name: formData.get('name'),
+                    email: formData.get('email'),
+                    phone: formData.get('phone'),
+                    message: formData.get('message'),
+                    date: new Date().toISOString(),
+                    read: false
+                };
+                
+                saveMessage(newMessage);
+                
+                // 显示成功提示
+                const successMessage = document.createElement('div');
+                successMessage.style.cssText = `
+                    background: #2ed573;
+                    color: white;
+                    padding: 1rem;
+                    border-radius: 8px;
+                    margin-bottom: 1rem;
+                    font-size: 0.9rem;
+                    text-align: center;
+                    opacity: 0;
+                    transition: opacity 0.3s ease;
+                `;
+                successMessage.textContent = currentLang === 'zh' ? '留言已提交成功！' : 'Message sent successfully!';
+                
+                contactForm.insertBefore(successMessage, contactForm.firstChild);
+                
+                // 显示成功提示
+                setTimeout(() => {
+                    successMessage.style.opacity = '1';
+                }, 100);
+                
+                // 3秒后隐藏成功提示并重置表单
+                setTimeout(() => {
+                    successMessage.style.opacity = '0';
+                    setTimeout(() => {
+                        successMessage.remove();
+                        contactForm.reset();
+                    }, 300);
+                }, 3000);
+            }
         });
     }
     

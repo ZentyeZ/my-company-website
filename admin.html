@@ -357,6 +357,7 @@
                             </div>
                             <div class="toolbar-actions">
                                 <button class="btn btn-secondary" id="batchDeleteBtn" onclick="batchDeleteProducts()">🗑️ 批量删除</button>
+                                <button class="btn btn-secondary" id="deleteAllProductsBtn" onclick="deleteAllProducts()">🗑️ 删除所有产品</button>
                                 <button class="btn btn-secondary" id="downloadTemplateBtn">📋 下载模板</button>
                                 <label class="btn btn-secondary">
                                     📂 导入Excel
@@ -373,10 +374,10 @@
                                     <th style="width: 40px;">
                                         <input type="checkbox" id="selectAllProducts" onchange="toggleSelectAll()">
                                     </th>
-                                    <th>产品名称</th>
                                     <th>化学名称</th>
+                                    <th>SMILES</th>
                                     <th>CAS号</th>
-                                    <th>产品编号</th>
+                                    <th>货号</th>
                                     <th>纯度</th>
                                     <th>价格</th>
                                     <th style="width: 100px;">热门</th>
@@ -386,6 +387,11 @@
                             <tbody id="productsTable">
                             </tbody>
                         </table>
+                    </div>
+                    <div class="pagination" id="productsPagination">
+                        <button class="btn btn-secondary" id="prevPageBtn" onclick="changePage(-1)">上一页</button>
+                        <span id="pageInfo">第 1 页</span>
+                        <button class="btn btn-secondary" id="nextPageBtn" onclick="changePage(1)">下一页</button>
                     </div>
                 </section>
 
@@ -743,19 +749,25 @@
             </div>
             <form id="productForm">
                 <input type="hidden" id="productId">
-                <div class="form-group-row">
-                    <div class="form-group">
-                        <label class="lang-label"><span class="lang-tag">中</span> 产品名称</label>
-                        <input type="text" id="productName" required>
-                    </div>
-                    <div class="form-group">
-                        <label class="lang-label"><span class="lang-tag">EN</span> 产品名称</label>
-                        <input type="text" id="productNameEn">
-                    </div>
+                <div class="form-group">
+                    <label>化学名称 (Chemical Name) <span style="color: var(--error);">*</span></label>
+                    <input type="text" id="productChemicalName" placeholder="例如：Proteinase K" required>
                 </div>
                 <div class="form-group">
-                    <label>化学名称 (Chemical Name)</label>
-                    <input type="text" id="productChemicalName" placeholder="例如：Proteinase K">
+                    <label>SMILES</label>
+                    <input type="text" id="productSmiles" placeholder="例如：CC(C)C1=CC=C(C=C1)C(=O)O">
+                </div>
+                <div class="form-group">
+                    <label>产品图片</label>
+                    <div class="image-upload-container">
+                        <div class="image-preview" id="productImagePreview">
+                            <span class="image-placeholder">📷 点击上传图片</span>
+                        </div>
+                        <input type="file" id="productImageInput" accept="image/*" style="display: none;">
+                        <input type="hidden" id="productImage">
+                        <button type="button" class="btn btn-secondary" onclick="document.getElementById('productImageInput').click()">选择图片</button>
+                        <button type="button" class="btn btn-secondary" id="removeImageBtn" style="display: none;">删除图片</button>
+                    </div>
                 </div>
                 <div class="form-group-row">
                     <div class="form-group">

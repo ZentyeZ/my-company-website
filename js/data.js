@@ -2,7 +2,7 @@ let siteData = {};
 
 const DATA_VERSION_KEY = 'acelynn_data_version';
 const CURRENT_DATA_VERSION = '5.0';
-const API_BASE_URL = 'http://localhost:3000/api';
+const API_BASE_URL = 'http://localhost:3001/api';
 
 async function fetchDataFromServer() {
     try {

@@ -10,19 +10,20 @@ function setLanguage(lang) {
     currentLang = lang;
     localStorage.setItem('acelynnLang', lang);
     document.documentElement.lang = lang === 'zh' ? 'zh-CN' : 'en';
-    
+
     const langToggle = document.getElementById('langToggle');
     if (langToggle) {
         langToggle.textContent = lang === 'zh' ? 'EN' : '中';
     }
-    
+
     updatePageContent();
+    showToast(currentLang === 'zh' ? '语言已切换' : 'Language switched', 'success');
 }
 
 async function updatePageContent() {
     try {
         const data = await loadData();
-        
+
         document.querySelectorAll('[data-i18n]').forEach(el => {
             const key = el.getAttribute('data-i18n');
             const text = getTextFromData(key, data);
@@ -30,7 +31,7 @@ async function updatePageContent() {
                 el.textContent = text;
             }
         });
-        
+
         document.querySelectorAll('[data-i18n-placeholder]').forEach(el => {
             const key = el.getAttribute('data-i18n-placeholder');
             const text = getTextFromData(key, data);
@@ -38,18 +39,17 @@ async function updatePageContent() {
                 el.placeholder = text;
             }
         });
-        
+
         updateAboutPage(data);
         updateContactPage(data);
         updateFeatures(data);
-        
+
         await renderProducts();
         renderNews();
     } catch (error) {
         console.error('更新页面内容失败:', error);
-        // 如果加载失败，使用默认数据
         const defaultData = getDefaultData();
-        
+
         document.querySelectorAll('[data-i18n]').forEach(el => {
             const key = el.getAttribute('data-i18n');
             const text = getTextFromData(key, defaultData);
@@ -57,7 +57,7 @@ async function updatePageContent() {
                 el.textContent = text;
             }
         });
-        
+
         document.querySelectorAll('[data-i18n-placeholder]').forEach(el => {
             const key = el.getAttribute('data-i18n-placeholder');
             const text = getTextFromData(key, defaultData);
@@ -65,43 +65,25 @@ async function updatePageContent() {
                 el.placeholder = text;
             }
         });
-        
+
         updateAboutPage(defaultData);
         updateContactPage(defaultData);
         updateFeatures(defaultData);
-        
-        // 直接渲染产品，使用默认数据
+
         const container = document.getElementById('productsList');
         const hotProductsList = document.getElementById('hotProductsList');
         if (hotProductsList) {
             const hotProductsData = defaultData.products.filter(p => p.isHot).slice(0, 6);
-            hotProductsList.innerHTML = hotProductsData.map(p => `
-                <div class="product-card" onclick="viewProductDetail(${p.id})" style="cursor: pointer;">
-                    <div class="product-image">${p.icon || '🧬'}</div>
-                    <div class="product-info">
-                        <h3 class="product-name">${getLocalizedText(p.name)}</h3>
-                        ${p.chemicalName ? `<div style="font-size: 0.9rem; color: var(--primary-blue); margin-bottom: 0.5rem; font-style: italic;">${p.chemicalName}</div>` : ''}
-                        <p class="product-price">${p.price}</p>
-                        <p class="product-desc">${getLocalizedText(p.desc)}</p>
-                        ${(p.casNumber || p.catalogNumber || p.purity ? `
-                            <div style="margin-top: 0.75rem; padding-top: 0.75rem; border-top: 1px solid var(--bg-light);">
-                                ${p.casNumber ? `<div style="font-size: 0.85rem; color: var(--text-gray); margin-bottom: 0.25rem;"><strong>CAS:</strong> ${p.casNumber}</div>` : ''}
-                                ${p.catalogNumber ? `<div style="font-size: 0.85rem; color: var(--text-gray); margin-bottom: 0.25rem;"><strong>货号:</strong> ${p.catalogNumber}</div>` : ''}
-                                ${p.purity ? `<div style="font-size: 0.85rem; color: var(--text-gray);"><strong>纯度:</strong> ${p.purity}</div>` : ''}
-                            </div>
-                        ` : '')}
-                    </div>
-                </div>
-            `).join('');
+            hotProductsList.innerHTML = hotProductsData.map(p => createProductCard(p)).join('');
         }
-        
+
         renderNews();
     }
 }
 
 function getTextFromData(key, data) {
     if (!data.pages) return '';
-    
+
     switch(key) {
         case 'nav.home': return currentLang === 'zh' ? '首页' : 'Home';
         case 'nav.about': return getLocalizedText(data.pages.about?.title) || (currentLang === 'zh' ? '关于我们' : 'About');
@@ -142,6 +124,8 @@ function getTextFromData(key, data) {
         case 'contact.emailPlaceholder': return currentLang === 'zh' ? '请输入您的邮箱地址' : 'Please enter your email address';
         case 'contact.phonePlaceholder': return currentLang === 'zh' ? '请输入您的联系电话' : 'Please enter your phone number';
         case 'contact.messagePlaceholder': return currentLang === 'zh' ? '请输入您的留言内容' : 'Please enter your message';
+        case 'footer.copyright': return currentLang === 'zh' ? '© 2015 爱诗伦生物科技（上海）有限公司 All Rights Reserved.' : '© 2015 Acelynn Biotech Inc. All Rights Reserved.';
+        case 'searchButton': return currentLang === 'zh' ? '搜索' : 'Search';
         default: return '';
     }
 }
@@ -151,7 +135,7 @@ function updateAboutPage(data) {
     const aboutText2 = document.getElementById('aboutText2');
     if (aboutText) aboutText.textContent = getLocalizedText(data.company.aboutText);
     if (aboutText2) aboutText2.textContent = getLocalizedText(data.company.aboutText2);
-    
+
     const missionText = document.getElementById('missionText');
     const visionText = document.getElementById('visionText');
     const valuesText = document.getElementById('valuesText');
@@ -179,7 +163,7 @@ function updateFeatures(data) {
                 const icon = featureCards[i].querySelector('.feature-icon');
                 const title = featureCards[i].querySelector('.feature-title');
                 const desc = featureCards[i].querySelector('.feature-desc');
-                
+
                 if (icon) icon.textContent = item.icon;
                 if (title) title.textContent = getLocalizedText(item.title);
                 if (desc) desc.textContent = getLocalizedText(item.desc);
@@ -188,27 +172,50 @@ function updateFeatures(data) {
     }
 }
 
+function createProductCard(p) {
+    const hasImage = p.image && p.image.startsWith('data:image');
+    const displayName = p.chemicalName || getLocalizedText(p.name);
+    return `
+        <div class="product-card ${hasImage ? 'has-image' : ''}" onclick="viewProductDetail(${p.id})" data-product-id="${p.id}">
+            ${hasImage ? `<div class="product-image"><img src="${p.image}" alt="${displayName}"></div>` : ''}
+            <div class="product-info">
+                <div class="product-header">
+                    <h3 class="product-name">${displayName}</h3>
+                </div>
+                <div class="product-meta">
+                    ${p.catalogNumber ? `<span class="product-tag">${p.catalogNumber}</span>` : ''}
+                    ${p.casNumber ? `<span class="product-tag">CAS: ${p.casNumber}</span>` : ''}
+                    ${p.smiles ? `<span class="product-tag">SMILES: ${p.smiles.substring(0, 20)}${p.smiles.length > 20 ? '...' : ''}</span>` : ''}
+                </div>
+                <p class="product-desc">${getLocalizedText(p.desc)}</p>
+                <div class="product-footer">
+                    <span class="product-price">${p.price}</span>
+                    ${p.purity ? `<span class="product-tag">${p.purity}</span>` : ''}
+                </div>
+            </div>
+        </div>
+    `;
+}
+
 async function renderProducts() {
     const container = document.getElementById('productsList');
     const noResults = document.getElementById('noResults');
     const searchResultsInfo = document.getElementById('searchResultsInfo');
     const hotProducts = document.getElementById('hotProducts');
     const hotProductsList = document.getElementById('hotProductsList');
-    
+
     if (!container || !hotProductsList) return;
-    
+
     try {
         const data = await loadData();
         const searchTerm = document.getElementById('productSearch')?.value?.toLowerCase() || '';
-        
         const urlParams = new URLSearchParams(window.location.search);
         const urlSearch = urlParams.get('search')?.toLowerCase() || '';
         const finalSearchTerm = searchTerm || urlSearch;
-        
+
         if (finalSearchTerm && !searchTerm) {
             const searchInput = document.getElementById('productSearch');
             if (searchInput) {
-                // 确保只设置有效的搜索词，避免设置数字或空值
                 if (finalSearchTerm.trim() && isNaN(finalSearchTerm)) {
                     searchInput.value = finalSearchTerm;
                 } else {
@@ -216,9 +223,9 @@ async function renderProducts() {
                 }
             }
         }
-        
+
         let products = data.products || [];
-        
+
         if (finalSearchTerm) {
             products = products.filter(p => {
                 const name = getLocalizedText(p.name).toLowerCase();
@@ -226,7 +233,7 @@ async function renderProducts() {
                 const casNumber = (p.casNumber || '').toLowerCase();
                 const catalogNumber = (p.catalogNumber || '').toLowerCase();
                 const desc = getLocalizedText(p.desc).toLowerCase();
-                
+
                 return name.includes(finalSearchTerm) ||
                        chemicalName.includes(finalSearchTerm) ||
                        casNumber.includes(finalSearchTerm) ||
@@ -234,124 +241,42 @@ async function renderProducts() {
                        desc.includes(finalSearchTerm);
             });
         }
-        
+
         if (!finalSearchTerm) {
             if (hotProducts) hotProducts.style.display = 'block';
             container.style.display = 'none';
             if (noResults) noResults.style.display = 'none';
             if (searchResultsInfo) searchResultsInfo.innerHTML = '';
-            
+
             const hotProductsData = products.filter(p => p.isHot).slice(0, 6);
-            hotProductsList.innerHTML = hotProductsData.map(p => `
-                <div class="product-card" onclick="viewProductDetail(${p.id})" style="cursor: pointer;">
-                    <div class="product-image">${p.icon || '🧬'}</div>
-                    <div class="product-info">
-                        <h3 class="product-name">${getLocalizedText(p.name)}</h3>
-                        ${p.chemicalName ? `<div style="font-size: 0.9rem; color: var(--primary-blue); margin-bottom: 0.5rem; font-style: italic;">${p.chemicalName}</div>` : ''}
-                        <p class="product-price">${p.price}</p>
-                        <p class="product-desc">${getLocalizedText(p.desc)}</p>
-                        ${(p.casNumber || p.catalogNumber || p.purity ? `
-                            <div style="margin-top: 0.75rem; padding-top: 0.75rem; border-top: 1px solid var(--bg-light);">
-                                ${p.casNumber ? `<div style="font-size: 0.85rem; color: var(--text-gray); margin-bottom: 0.25rem;"><strong>CAS:</strong> ${p.casNumber}</div>` : ''}
-                                ${p.catalogNumber ? `<div style="font-size: 0.85rem; color: var(--text-gray); margin-bottom: 0.25rem;"><strong>货号:</strong> ${p.catalogNumber}</div>` : ''}
-                                ${p.purity ? `<div style="font-size: 0.85rem; color: var(--text-gray);"><strong>纯度:</strong> ${p.purity}</div>` : ''}
-                            </div>
-                        ` : '')}
-                    </div>
-                </div>
-            `).join('');
-            
+            hotProductsList.innerHTML = hotProductsData.map(p => createProductCard(p)).join('');
+
             return;
         }
-        
+
         if (hotProducts) hotProducts.style.display = 'none';
         container.style.display = 'grid';
-        
+
         if (searchResultsInfo) {
             if (finalSearchTerm) {
-                searchResultsInfo.innerHTML = `<p style="color: var(--text-gray); margin-bottom: 1.5rem;">找到 ${products.length} 个相关产品 ("${finalSearchTerm}")</p>`;
+                searchResultsInfo.innerHTML = `<p style="color: var(--text-gray); margin-bottom: 1.5rem;">${currentLang === 'zh' ? '找到' : 'Found'} ${products.length} ${currentLang === 'zh' ? '个相关产品' : 'products'} ("${finalSearchTerm}")</p>`;
             } else {
                 searchResultsInfo.innerHTML = '';
             }
         }
-        
+
         if (products.length === 0) {
             container.innerHTML = '';
             if (noResults) noResults.style.display = 'block';
         } else {
             if (noResults) noResults.style.display = 'none';
-            container.innerHTML = products.map(p => `
-                <div class="product-card" onclick="viewProductDetail(${p.id})" style="cursor: pointer;">
-                    <div class="product-image">${p.icon || '🧬'}</div>
-                    <div class="product-info">
-                        <h3 class="product-name">${getLocalizedText(p.name)}</h3>
-                        ${p.chemicalName ? `<div style="font-size: 0.9rem; color: var(--primary-blue); margin-bottom: 0.5rem; font-style: italic;">${p.chemicalName}</div>` : ''}
-                        <p class="product-price">${p.price}</p>
-                        <p class="product-desc">${getLocalizedText(p.desc)}</p>
-                        ${(p.casNumber || p.catalogNumber || p.purity ? `
-                            <div style="margin-top: 0.75rem; padding-top: 0.75rem; border-top: 1px solid var(--bg-light);">
-                                ${p.casNumber ? `<div style="font-size: 0.85rem; color: var(--text-gray); margin-bottom: 0.25rem;"><strong>CAS:</strong> ${p.casNumber}</div>` : ''}
-                                ${p.catalogNumber ? `<div style="font-size: 0.85rem; color: var(--text-gray); margin-bottom: 0.25rem;"><strong>货号:</strong> ${p.catalogNumber}</div>` : ''}
-                                ${p.purity ? `<div style="font-size: 0.85rem; color: var(--text-gray);"><strong>纯度:</strong> ${p.purity}</div>` : ''}
-                            </div>
-                        ` : '')}
-                    </div>
-                </div>
-            `).join('');
+            container.innerHTML = products.map(p => createProductCard(p)).join('');
         }
     } catch (error) {
         console.error('渲染产品失败:', error);
-        // 如果加载失败，使用默认数据
-        const defaultData = {
-            products: [
-                {
-                    id: 1,
-                    name: { zh: '重组蛋白酶K', en: 'Recombinant Proteinase K' },
-                    chemicalName: 'Proteinase K',
-                    price: '¥1,280',
-                    desc: { zh: '高纯度重组蛋白酶K，用于核酸提取和蛋白消化', en: 'High purity recombinant Proteinase K for nucleic acid extraction and protein digestion' },
-                    icon: '🧬',
-                    casNumber: '39450-01-6',
-                    catalogNumber: 'PK-001',
-                    specification: '100mg',
-                    purity: '≥95% (SDS-PAGE)',
-                    isHot: true
-                },
-                {
-                    id: 2,
-                    name: { zh: 'DNA提取试剂盒', en: 'DNA Extraction Kit' },
-                    chemicalName: 'Genomic DNA Extraction Kit',
-                    price: '¥890',
-                    desc: { zh: '快速高效的基因组DNA提取试剂盒', en: 'Fast and efficient genomic DNA extraction kit' },
-                    icon: '🧪',
-                    casNumber: '',
-                    catalogNumber: 'DK-002',
-                    specification: '50 preps',
-                    purity: '',
-                    isHot: true
-                }
-            ]
-        };
-        
+        const defaultData = getDefaultData();
         const hotProductsData = defaultData.products.filter(p => p.isHot).slice(0, 6);
-        hotProductsList.innerHTML = hotProductsData.map(p => `
-            <div class="product-card" onclick="viewProductDetail(${p.id})" style="cursor: pointer;">
-                <div class="product-image">${p.icon || '🧬'}</div>
-                <div class="product-info">
-                    <h3 class="product-name">${getLocalizedText(p.name)}</h3>
-                    ${p.chemicalName ? `<div style="font-size: 0.9rem; color: var(--primary-blue); margin-bottom: 0.5rem; font-style: italic;">${p.chemicalName}</div>` : ''}
-                    <p class="product-price">${p.price}</p>
-                    <p class="product-desc">${getLocalizedText(p.desc)}</p>
-                    ${(p.casNumber || p.catalogNumber || p.purity ? `
-                        <div style="margin-top: 0.75rem; padding-top: 0.75rem; border-top: 1px solid var(--bg-light);">
-                            ${p.casNumber ? `<div style="font-size: 0.85rem; color: var(--text-gray); margin-bottom: 0.25rem;"><strong>CAS:</strong> ${p.casNumber}</div>` : ''}
-                            ${p.catalogNumber ? `<div style="font-size: 0.85rem; color: var(--text-gray); margin-bottom: 0.25rem;"><strong>货号:</strong> ${p.catalogNumber}</div>` : ''}
-                            ${p.purity ? `<div style="font-size: 0.85rem; color: var(--text-gray);"><strong>纯度:</strong> ${p.purity}</div>` : ''}
-                        </div>
-                    ` : '')}
-                </div>
-            </div>
-        `).join('');
+        hotProductsList.innerHTML = hotProductsData.map(p => createProductCard(p)).join('');
     }
 }
 
@@ -360,19 +285,24 @@ function viewProductDetail(productId) {
     window.location.href = 'product-detail.html?id=' + productId;
 }
 
-function renderNews() {
+async function renderNews() {
     const container = document.getElementById('newsList');
     if (!container) return;
-    
-    const data = loadData();
-    
-    container.innerHTML = data.news.map(n => `
-        <div class="news-card">
-            <div class="news-date">${n.date}</div>
-            <h3 class="news-title">${getLocalizedText(n.title)}</h3>
-            <p class="news-content">${getLocalizedText(n.content)}</p>
-        </div>
-    `).join('');
+
+    try {
+        const data = await loadData();
+        const news = data.news || [];
+
+        container.innerHTML = news.map(n => `
+            <div class="news-card">
+                <div class="news-date">📅 ${n.date}</div>
+                <h3 class="news-title">${getLocalizedText(n.title)}</h3>
+                <p class="news-content">${getLocalizedText(n.content)}</p>
+            </div>
+        `).join('');
+    } catch (error) {
+        console.error('渲染新闻失败:', error);
+    }
 }
 
 function saveMessage(message) {
@@ -384,29 +314,16 @@ function saveMessage(message) {
 function initNavSearch() {
     const searchInput = document.getElementById('navSearch');
     const suggestionsContainer = document.getElementById('navSearchSuggestions');
-    
+
     if (!searchInput) return;
-    
-    searchInput.addEventListener('input', (e) => {
-        const query = e.target.value;
-        const results = searchProducts(query);
-        renderNavSearchSuggestions(results);
-    });
-    
-    searchInput.addEventListener('focus', (e) => {
-        if (e.target.value) {
-            const results = searchProducts(e.target.value);
-            renderNavSearchSuggestions(results);
-        }
-    });
-    
+
     document.addEventListener('click', (e) => {
-        if (!searchInput.contains(e.target) && 
+        if (!searchInput.contains(e.target) &&
             !suggestionsContainer?.contains(e.target)) {
             suggestionsContainer?.classList.remove('active');
         }
     });
-    
+
     searchInput.addEventListener('keypress', (e) => {
         if (e.key === 'Enter') {
             const query = searchInput.value;
@@ -417,56 +334,114 @@ function initNavSearch() {
     });
 }
 
-function searchProducts(query) {
-    if (!query || query.trim() === '') return [];
-    
-    const data = loadData();
-    const q = query.toLowerCase().trim();
-    
-    return data.products.filter(p => {
-        const name = getLocalizedText(p.name).toLowerCase();
-        const chemicalName = (p.chemicalName || '').toLowerCase();
-        const casNumber = (p.casNumber || '').toLowerCase();
-        const catalogNumber = (p.catalogNumber || '').toLowerCase();
-        const desc = getLocalizedText(p.desc).toLowerCase();
-        
-        return name.includes(q) || 
-               chemicalName.includes(q) ||
-               casNumber.includes(q) || 
-               catalogNumber.includes(q) ||
-               desc.includes(q);
+
+
+function initScrollEffects() {
+    const navbar = document.querySelector('.navbar');
+    const backToTop = document.querySelector('.back-to-top');
+
+    window.addEventListener('scroll', () => {
+        if (window.scrollY > 50) {
+            navbar?.classList.add('scrolled');
+        } else {
+            navbar?.classList.remove('scrolled');
+        }
+
+        if (window.scrollY > 500) {
+            backToTop?.classList.add('visible');
+        } else {
+            backToTop?.classList.remove('visible');
+        }
+    });
+
+    if (backToTop) {
+        backToTop.addEventListener('click', () => {
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        });
+    }
+}
+
+function initIntersectionObserver() {
+    const observerOptions = {
+        root: null,
+        rootMargin: '0px',
+        threshold: 0.1
+    };
+
+    const observer = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+            if (entry.isIntersecting) {
+                entry.target.classList.add('animate-in');
+                observer.unobserve(entry.target);
+            }
+        });
+    }, observerOptions);
+
+    document.querySelectorAll('.feature-card, .product-card, .news-card, .mission-card').forEach(el => {
+        el.style.opacity = '0';
+        el.style.transform = 'translateY(20px)';
+        el.style.transition = 'opacity 0.6s ease, transform 0.6s ease';
+        observer.observe(el);
     });
 }
 
-function renderNavSearchSuggestions(products) {
-    const suggestionsContainer = document.getElementById('navSearchSuggestions');
-    if (!suggestionsContainer) return;
-    
-    if (products.length === 0) {
-        suggestionsContainer.classList.remove('active');
-        return;
+function showToast(message, type = 'success', duration = 3000) {
+    const existingToast = document.querySelector('.toast');
+    if (existingToast) {
+        existingToast.remove();
     }
-    
-    suggestionsContainer.classList.add('active');
-    suggestionsContainer.innerHTML = products.map(p => `
-        <div class="search-suggestion-item" data-product-id="${p.id}">
-            <div class="search-suggestion-icon">${p.icon || '🧬'}</div>
-            <div class="search-suggestion-content">
-                <div class="search-suggestion-name">${getLocalizedText(p.name)}</div>
-                <div class="search-suggestion-meta">
-                    ${p.casNumber ? `<span>CAS: ${p.casNumber}</span>` : ''}
-                    ${p.catalogNumber ? `<span>货号: ${p.catalogNumber}</span>` : ''}
-                </div>
-            </div>
-        </div>
-    `).join('');
-    
-    suggestionsContainer.querySelectorAll('.search-suggestion-item').forEach(item => {
-        item.addEventListener('click', () => {
-            const productId = item.getAttribute('data-product-id');
-            viewProductDetail(productId);
-        });
+
+    const toast = document.createElement('div');
+    toast.className = `toast ${type}`;
+    toast.textContent = message;
+    document.body.appendChild(toast);
+
+    requestAnimationFrame(() => {
+        toast.classList.add('show');
     });
+
+    setTimeout(() => {
+        toast.classList.remove('show');
+        setTimeout(() => toast.remove(), 300);
+    }, duration);
+}
+
+function initStatsCounter() {
+    const statsSection = document.querySelector('.stats-section');
+    if (!statsSection) return;
+
+    const counters = statsSection.querySelectorAll('.stat-number');
+    let hasAnimated = false;
+
+    const observer = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+            if (entry.isIntersecting && !hasAnimated) {
+                hasAnimated = true;
+                counters.forEach(counter => {
+                    const target = parseInt(counter.dataset.target);
+                    const suffix = counter.dataset.suffix || '';
+                    animateCounter(counter, target, suffix);
+                });
+            }
+        });
+    }, { threshold: 0.5 });
+
+    observer.observe(statsSection);
+}
+
+function animateCounter(element, target, suffix = '') {
+    const duration = 2000;
+    const step = target / (duration / 16);
+    let current = 0;
+
+    const timer = setInterval(() => {
+        current += step;
+        if (current >= target) {
+            current = target;
+            clearInterval(timer);
+        }
+        element.textContent = Math.floor(current) + suffix;
+    }, 16);
 }
 
 document.addEventListener('DOMContentLoaded', async () => {
@@ -476,52 +451,76 @@ document.addEventListener('DOMContentLoaded', async () => {
             setLanguage(currentLang === 'zh' ? 'en' : 'zh');
         });
     }
-    
+
     const hamburger = document.getElementById('hamburger');
     const navMenu = document.querySelector('.nav-menu');
     if (hamburger && navMenu) {
         hamburger.addEventListener('click', () => {
+            hamburger.classList.toggle('active');
             navMenu.classList.toggle('active');
         });
+
+        navMenu.querySelectorAll('.nav-link').forEach(link => {
+            link.addEventListener('click', () => {
+                hamburger.classList.remove('active');
+                navMenu.classList.remove('active');
+            });
+        });
     }
-    
+
     const productSearch = document.getElementById('productSearch');
-    if (productSearch) productSearch.addEventListener('input', renderProducts);
-    
+    const searchButton = document.getElementById('searchButton');
+    if (productSearch && searchButton) {
+        // 移除input事件监听器，改为点击按钮时搜索
+        searchButton.addEventListener('click', () => {
+            const query = productSearch.value.trim();
+            if (query) {
+                window.location.href = `products.html?search=${encodeURIComponent(query)}`;
+            }
+        });
+        
+        // 保留回车键搜索功能
+        productSearch.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                const query = productSearch.value.trim();
+                if (query) {
+                    window.location.href = `products.html?search=${encodeURIComponent(query)}`;
+                }
+            }
+        });
+    }
+
     const contactForm = document.getElementById('contactForm');
     if (contactForm) {
-        // 清除错误提示的函数
         function clearError(fieldName) {
             const errorElement = document.getElementById(`${fieldName}Error`);
             const inputElement = document.querySelector(`input[name="${fieldName}"]`) || document.querySelector(`textarea[name="${fieldName}"]`);
-            
+
             if (errorElement) {
                 errorElement.textContent = '';
                 errorElement.classList.remove('show');
             }
-            
+
             if (inputElement) {
                 inputElement.classList.remove('error');
             }
         }
-        
-        // 显示错误提示的函数
+
         function showError(fieldName, message) {
             const errorElement = document.getElementById(`${fieldName}Error`);
             const inputElement = document.querySelector(`input[name="${fieldName}"]`) || document.querySelector(`textarea[name="${fieldName}"]`);
-            
+
             if (errorElement) {
                 errorElement.textContent = message;
                 errorElement.classList.add('show');
             }
-            
+
             if (inputElement) {
                 inputElement.classList.add('error');
                 inputElement.focus();
             }
         }
-        
-        // 为输入框添加输入事件，自动清除错误提示
+
         const requiredFields = ['name', 'email', 'message', 'phone'];
         requiredFields.forEach(field => {
             const input = document.querySelector(`input[name="${field}"]`) || document.querySelector(`textarea[name="${field}"]`);
@@ -529,57 +528,59 @@ document.addEventListener('DOMContentLoaded', async () => {
                 input.addEventListener('input', () => clearError(field));
             }
         });
-        
-        // 表单提交处理
-        contactForm.addEventListener('submit', (e) => {
+
+        contactForm.addEventListener('submit', async (e) => {
             e.preventDefault();
-            
-            // 清除所有错误提示
+
             requiredFields.forEach(field => clearError(field));
-            
-            // 自定义表单验证
+
             const name = document.querySelector('input[name="name"]').value.trim();
             const email = document.querySelector('input[name="email"]').value.trim();
             const message = document.querySelector('textarea[name="message"]').value.trim();
-            
+
             let isValid = true;
-            
-            // 验证逻辑
+
             if (!name) {
                 showError('name', currentLang === 'zh' ? '请输入您的姓名' : 'Please enter your name');
                 isValid = false;
             }
-            
+
             if (!email) {
                 showError('email', currentLang === 'zh' ? '请输入您的邮箱地址' : 'Please enter your email address');
                 isValid = false;
             } else {
-                // 简单的邮箱格式验证
                 const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
                 if (!emailRegex.test(email)) {
                     showError('email', currentLang === 'zh' ? '请输入有效的邮箱地址' : 'Please enter a valid email address');
                     isValid = false;
                 }
             }
-            
+
             if (!message) {
                 showError('message', currentLang === 'zh' ? '请输入您的留言内容' : 'Please enter your message');
                 isValid = false;
             }
-            
-            // 验证联系电话格式（如果填写了）
+
             const phone = document.querySelector('input[name="phone"]').value.trim();
-            if (phone) {
-                // 简单的电话号码格式验证（支持国内外电话号码）
+            if (!phone) {
+                showError('phone', currentLang === 'zh' ? '请输入您的联系电话' : 'Please enter your phone number');
+                isValid = false;
+            } else {
                 const phoneRegex = /^[\+]?[(]?[0-9]{3}[)]?[-\s\.]?[0-9]{3}[-\s\.]?[0-9]{4,6}$/;
                 if (!phoneRegex.test(phone)) {
                     showError('phone', currentLang === 'zh' ? '请输入有效的联系电话' : 'Please enter a valid phone number');
                     isValid = false;
                 }
             }
-            
+
             if (isValid) {
-                // 收集表单数据
+                const submitBtn = contactForm.querySelector('button[type="submit"]');
+                const originalText = submitBtn.textContent;
+                submitBtn.disabled = true;
+                submitBtn.innerHTML = '<span class="spinner"></span>';
+
+                await new Promise(resolve => setTimeout(resolve, 1000));
+
                 const formData = new FormData(contactForm);
                 const newMessage = {
                     id: Date.now(),
@@ -590,43 +591,31 @@ document.addEventListener('DOMContentLoaded', async () => {
                     date: new Date().toISOString(),
                     read: false
                 };
-                
+
                 saveMessage(newMessage);
-                
-                // 显示成功提示
-                const successMessage = document.createElement('div');
-                successMessage.style.cssText = `
-                    background: #2ed573;
-                    color: white;
-                    padding: 1rem;
-                    border-radius: 8px;
-                    margin-bottom: 1rem;
-                    font-size: 0.9rem;
-                    text-align: center;
-                    opacity: 0;
-                    transition: opacity 0.3s ease;
-                `;
-                successMessage.textContent = currentLang === 'zh' ? '留言已提交成功！' : 'Message sent successfully!';
-                
-                contactForm.insertBefore(successMessage, contactForm.firstChild);
-                
-                // 显示成功提示
-                setTimeout(() => {
-                    successMessage.style.opacity = '1';
-                }, 100);
-                
-                // 3秒后隐藏成功提示并重置表单
-                setTimeout(() => {
-                    successMessage.style.opacity = '0';
-                    setTimeout(() => {
-                        successMessage.remove();
-                        contactForm.reset();
-                    }, 300);
-                }, 3000);
+
+                submitBtn.disabled = false;
+                submitBtn.textContent = originalText;
+
+                showToast(currentLang === 'zh' ? '留言已提交成功！' : 'Message sent successfully!', 'success');
+                contactForm.reset();
             }
         });
     }
-    
+
     initNavSearch();
+    initScrollEffects();
+    initIntersectionObserver();
+    initStatsCounter();
+
     await updatePageContent();
+
+    document.querySelectorAll('.feature-card, .product-card, .news-card, .mission-card').forEach(el => {
+        el.style.opacity = '1';
+        el.style.transform = 'translateY(0)';
+    });
+});
+
+window.addEventListener('load', () => {
+    document.body.classList.add('loaded');
 });

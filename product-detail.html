@@ -11,14 +11,7 @@
     <nav class="navbar">
         <div class="container">
             <div class="nav-brand">
-                <img src="images/logo.png" alt="ACELYNN 爱诗伦" class="logo">
-            </div>
-            <div class="nav-search">
-                <div class="nav-search-wrapper">
-                    <span class="search-icon-nav">🔍</span>
-                    <input type="text" id="navSearch" class="nav-search-input" placeholder="搜索产品名称、CAS号、货号..." data-i18n-placeholder="hero.search">
-                </div>
-                <div class="nav-search-suggestions" id="navSearchSuggestions"></div>
+                <img src="images/logo.svg" alt="ACELYNN 爱诗伦" class="logo">
             </div>
             <div class="nav-menu">
                 <a href="index.html" class="nav-link" data-i18n="nav.home">首页</a>
@@ -53,8 +46,8 @@
             
             <div id="productDetail" style="display: none;">
                 <div class="product-detail-grid">
-                    <div class="product-detail-image">
-                        <div style="width: 100%; height: 400px; background: linear-gradient(135deg, var(--light-blue), var(--secondary-blue)); display: flex; align-items: center; justify-content: center; border-radius: 12px; font-size: 8rem;" id="productIcon">🧬</div>
+                    <div class="product-detail-image" id="productImageContainer">
+                        <div class="product-detail-image-placeholder" id="productIcon">🧬</div>
                     </div>
                     <div class="product-detail-info">
                         <h1 class="product-detail-title" id="productName">产品名称</h1>
@@ -95,30 +88,35 @@
     <script src="js/main.js"></script>
     <script>
         let currentProduct = null;
-        
-        document.addEventListener('DOMContentLoaded', () => {
-            loadProductDetail();
+
+        document.addEventListener('DOMContentLoaded', async () => {
+            await loadProductDetail();
         });
-        
-        function loadProductDetail() {
+
+        async function loadProductDetail() {
             const urlParams = new URLSearchParams(window.location.search);
             const productId = urlParams.get('id') || sessionStorage.getItem('viewProductId');
-            
+
             if (!productId) {
                 showProductNotFound();
                 return;
             }
-            
-            const data = loadData();
-            const product = data.products.find(p => p.id === parseInt(productId));
-            
-            if (!product) {
+
+            try {
+                const data = await loadData();
+                const product = data.products.find(p => p.id === parseInt(productId));
+
+                if (!product) {
+                    showProductNotFound();
+                    return;
+                }
+
+                currentProduct = product;
+                displayProductDetail(product);
+            } catch (error) {
+                console.error('加载产品详情失败:', error);
                 showProductNotFound();
-                return;
             }
-            
-            currentProduct = product;
-            displayProductDetail(product);
         }
         
         function showProductNotFound() {
@@ -129,21 +127,33 @@
         function displayProductDetail(product) {
             document.getElementById('productNotFound').style.display = 'none';
             document.getElementById('productDetail').style.display = 'block';
-            
-            document.getElementById('productIcon').textContent = product.icon || '🧬';
-            document.getElementById('productName').textContent = getLocalizedText(product.name);
-            
-            const chemicalNameEl = document.getElementById('productChemicalName');
-            if (product.chemicalName) {
-                chemicalNameEl.textContent = product.chemicalName;
-                chemicalNameEl.style.display = 'block';
+
+            // 显示产品图片
+            const imageContainer = document.getElementById('productImageContainer');
+            const displayName = product.chemicalName || getLocalizedText(product.name);
+            if (product.image && product.image.startsWith('data:image')) {
+                imageContainer.innerHTML = `<img src="${product.image}" alt="${displayName}" class="product-detail-img">`;
             } else {
-                chemicalNameEl.style.display = 'none';
+                imageContainer.innerHTML = `<div class="product-detail-image-placeholder">🧬</div>`;
             }
-            
+
+            document.getElementById('productName').textContent = displayName;
+
             document.getElementById('productPrice').textContent = product.price;
             document.getElementById('productDesc').textContent = getLocalizedText(product.desc);
-            
+
+            if (product.smiles) {
+                const specsContainer = document.querySelector('.product-specs');
+                const smilesDiv = document.createElement('div');
+                smilesDiv.className = 'spec-item';
+                smilesDiv.id = 'specSmiles';
+                smilesDiv.innerHTML = `
+                    <span class="spec-label">SMILES:</span>
+                    <span class="spec-value" id="productSmiles">${product.smiles}</span>
+                `;
+                specsContainer.insertBefore(smilesDiv, specsContainer.firstChild);
+            }
+
             if (product.casNumber) {
                 document.getElementById('specCas').style.display = 'flex';
                 document.getElementById('productCas').textContent = product.casNumber;

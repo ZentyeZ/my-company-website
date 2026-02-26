@@ -10,15 +10,19 @@ const storage = multer.memoryStorage();
 const upload = multer({ storage: storage });
 
 const app = express();
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 3001;
 
 // 中间件
 app.use(cors());
-app.use(express.json());
+app.use(express.json({ limit: '100mb' }));
+app.use(express.urlencoded({ extended: true, limit: '100mb' }));
 app.use(express.static(path.join(__dirname, '.')));
 
-// 连接数据库
-let db = new sqlite3.Database('./acelynn.db', (err) => {
+// 连接数据库（使用绝对路径确保文件位置正确）
+const dbPath = path.join(__dirname, 'acelynn.db');
+console.log('数据库路径:', dbPath);
+
+let db = new sqlite3.Database(dbPath, (err) => {
   if (err) {
     console.error('数据库连接失败:', err.message);
   } else {
@@ -29,6 +33,8 @@ let db = new sqlite3.Database('./acelynn.db', (err) => {
 
 // 初始化数据库
 function initDatabase() {
+  console.log('开始初始化数据库...');
+
   db.run(`
     CREATE TABLE IF NOT EXISTS site_data (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -42,7 +48,17 @@ function initDatabase() {
       console.error('创建表失败:', err.message);
     } else {
       console.log('数据库表初始化成功');
-      insertDefaultData();
+      // 验证表是否创建成功
+      db.get("SELECT name FROM sqlite_master WHERE type='table' AND name='site_data'", (err, row) => {
+        if (err) {
+          console.error('验证表存在失败:', err.message);
+        } else if (row) {
+          console.log('验证成功: site_data 表已存在');
+          insertDefaultData();
+        } else {
+          console.error('验证失败: site_data 表不存在');
+        }
+      });
     }
   });
 }
@@ -214,16 +230,25 @@ function insertDefaultData() {
 
   db.get('SELECT * FROM site_data WHERE data_key = ?', ['siteData'], (err, row) => {
     if (err) {
-      console.error('查询数据失败:', err.message);
+      console.error('查询默认数据失败:', err.message);
     } else if (!row) {
-      db.run('INSERT INTO site_data (data_key, data_value) VALUES (?, ?)', 
-        ['siteData', JSON.stringify(defaultData)], (err) => {
+      console.log('数据库为空，插入默认数据...');
+      db.run('INSERT INTO site_data (data_key, data_value) VALUES (?, ?)',
+        ['siteData', JSON.stringify(defaultData)], function(err) {
           if (err) {
             console.error('插入默认数据失败:', err.message);
           } else {
-            console.log('默认数据插入成功');
+            console.log('默认数据插入成功，ID:', this.lastID);
           }
         });
+    } else {
+      console.log('数据库已有数据，跳过默认数据插入');
+      try {
+        const data = JSON.parse(row.data_value);
+        console.log('现有数据产品数量:', data.products ? data.products.length : 0);
+      } catch (e) {
+        console.error('解析现有数据失败:', e.message);
+      }
     }
   });
 }
@@ -232,12 +257,22 @@ function insertDefaultData() {
 
 // 获取所有数据
 app.get('/api/data', (req, res) => {
+  console.log('收到获取数据请求');
   db.get('SELECT * FROM site_data WHERE data_key = ?', ['siteData'], (err, row) => {
     if (err) {
+      console.error('获取数据失败:', err.message);
       res.status(500).json({ error: err.message });
     } else if (row) {
-      res.json(JSON.parse(row.data_value));
+      try {
+        const data = JSON.parse(row.data_value);
+        console.log('返回数据，产品数量:', data.products ? data.products.length : 0);
+        res.json(data);
+      } catch (e) {
+        console.error('解析数据失败:', e.message);
+        res.status(500).json({ error: '数据解析失败' });
+      }
     } else {
+      console.log('数据未找到');
       res.status(404).json({ error: '数据未找到' });
     }
   });
@@ -246,23 +281,109 @@ app.get('/api/data', (req, res) => {
 // 保存数据
 app.post('/api/data', (req, res) => {
   const siteData = req.body;
-  
-  db.run('UPDATE site_data SET data_value = ?, updated_at = CURRENT_TIMESTAMP WHERE data_key = ?', 
-    [JSON.stringify(siteData), 'siteData'], function(err) {
+
+  console.log('收到保存数据请求，产品数量:', siteData.products ? siteData.products.length : 0);
+
+  // 先检查数据是否存在
+  db.get('SELECT id FROM site_data WHERE data_key = ?', ['siteData'], (err, row) => {
+    if (err) {
+      console.error('查询数据失败:', err.message);
+      res.status(500).json({ error: err.message });
+      return;
+    }
+
+    const jsonData = JSON.stringify(siteData);
+
+    if (row) {
+      // 更新现有数据
+      db.run('UPDATE site_data SET data_value = ?, updated_at = CURRENT_TIMESTAMP WHERE data_key = ?',
+        [jsonData, 'siteData'], function(err) {
+          if (err) {
+            console.error('更新数据失败:', err.message);
+            res.status(500).json({ error: err.message });
+          } else {
+            console.log('数据更新成功，影响行数:', this.changes);
+            res.json({ success: true, message: '数据更新成功' });
+          }
+        });
+    } else {
+      // 插入新数据
+      db.run('INSERT INTO site_data (data_key, data_value) VALUES (?, ?)',
+        ['siteData', jsonData], function(err) {
+          if (err) {
+            console.error('插入数据失败:', err.message);
+            res.status(500).json({ error: err.message });
+          } else {
+            console.log('数据插入成功，ID:', this.lastID);
+            res.json({ success: true, message: '数据保存成功' });
+          }
+        });
+    }
+  });
+});
+
+// 批量导入产品（客户端分批发送）
+app.post('/api/import/batch', express.json({ limit: '50mb' }), (req, res) => {
+  try {
+    const { products, mode } = req.body;
+
+    if (!products || !Array.isArray(products)) {
+      return res.status(400).json({ error: '无效的产品数据' });
+    }
+
+    console.log(`收到批量导入请求: ${products.length} 个产品, 模式: ${mode}`);
+
+    db.get('SELECT * FROM site_data WHERE data_key = ?', ['siteData'], (err, row) => {
       if (err) {
-        // 如果更新失败，尝试插入
-        db.run('INSERT INTO site_data (data_key, data_value) VALUES (?, ?)', 
-          ['siteData', JSON.stringify(siteData)], (err) => {
-            if (err) {
-              res.status(500).json({ error: err.message });
-            } else {
-              res.json({ success: true, message: '数据保存成功' });
-            }
-          });
-      } else {
-        res.json({ success: true, message: '数据更新成功' });
+        console.error('查询数据失败:', err.message);
+        return res.status(500).json({ error: err.message });
       }
+
+      let siteData;
+      if (row) {
+        try {
+          siteData = JSON.parse(row.data_value);
+        } catch (e) {
+          siteData = { pages: {}, company: {}, products: [], news: [] };
+        }
+      } else {
+        siteData = { pages: {}, company: {}, products: [], news: [] };
+      }
+
+      if (!siteData.products) {
+        siteData.products = [];
+      }
+
+      if (mode === 'replace') {
+        // 替换模式：清空现有产品
+        siteData.products = products;
+      } else {
+        // 追加模式：添加到现有产品
+        siteData.products = [...siteData.products, ...products];
+      }
+
+      const jsonData = JSON.stringify(siteData);
+
+      // 直接使用 UPDATE，因为数据一定存在
+      db.run('UPDATE site_data SET data_value = ?, updated_at = CURRENT_TIMESTAMP WHERE data_key = ?',
+        [jsonData, 'siteData'], function(err) {
+          if (err) {
+            console.error('保存数据失败:', err.message);
+            return res.status(500).json({ error: err.message });
+          }
+
+          console.log(`批量导入成功: ${products.length} 个产品, 模式: ${mode}, 影响行数: ${this.changes}`);
+          res.json({
+            success: true,
+            message: `成功导入 ${products.length} 个产品`,
+            totalProducts: siteData.products.length
+          });
+        });
     });
+  } catch (error) {
+    console.error('批量导入错误:', error);
+    res.status(500).json({ error: error.message });
+  }
 });
 
 // Excel 导入产品
@@ -411,13 +532,38 @@ app.listen(PORT, () => {
 });
 
 // 关闭数据库连接
-process.on('SIGINT', () => {
-  db.close((err) => {
-    if (err) {
-      console.error('关闭数据库失败:', err.message);
+function closeDatabase() {
+  return new Promise((resolve) => {
+    if (db) {
+      db.close((err) => {
+        if (err) {
+          console.error('关闭数据库失败:', err.message);
+        } else {
+          console.log('数据库连接已关闭');
+        }
+        resolve();
+      });
     } else {
-      console.log('数据库连接已关闭');
+      resolve();
     }
-    process.exit(0);
   });
+}
+
+process.on('SIGINT', async () => {
+  console.log('\n收到 SIGINT 信号，正在关闭服务器...');
+  await closeDatabase();
+  process.exit(0);
+});
+
+process.on('SIGTERM', async () => {
+  console.log('\n收到 SIGTERM 信号，正在关闭服务器...');
+  await closeDatabase();
+  process.exit(0);
+});
+
+// 处理未捕获的异常
+process.on('uncaughtException', async (err) => {
+  console.error('未捕获的异常:', err);
+  await closeDatabase();
+  process.exit(1);
 });

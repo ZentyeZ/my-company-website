@@ -1,4 +1,6 @@
 let isLoggedIn = false;
+let currentPage = 1;
+const PRODUCTS_PER_PAGE = 20;
 
 const DEFAULT_ADMIN_USERNAME = 'admin';
 const DEFAULT_ADMIN_PASSWORD = 'admin123';
@@ -365,24 +367,49 @@ function renderProductsTab() {
     initAddProductBtn();
     initProductForm();
     initExcelImport();
+    initImageUpload();
 }
 
 function renderProductsTable() {
     const tbody = document.getElementById('productsTable');
-    if (!tbody || !siteData?.products) return;
-    
+    if (!tbody) return;
+
+    // 确保products数组存在
+    if (!siteData) {
+        siteData = {};
+    }
+    if (!siteData.products) {
+        siteData.products = [];
+    }
+
     // 按热门产品优先排序
     const sortedProducts = [...siteData.products].sort((a, b) => {
         if (a.isHot && !b.isHot) return -1;
         if (!a.isHot && b.isHot) return 1;
         return 0;
     });
-    
-    tbody.innerHTML = sortedProducts.map(product => `
+
+    // 计算分页
+    const totalPages = Math.max(1, Math.ceil(sortedProducts.length / PRODUCTS_PER_PAGE));
+
+    // 确保当前页在有效范围内
+    if (currentPage > totalPages) {
+        currentPage = totalPages;
+    }
+    if (currentPage < 1) {
+        currentPage = 1;
+    }
+
+    const start = (currentPage - 1) * PRODUCTS_PER_PAGE;
+    const end = start + PRODUCTS_PER_PAGE;
+    const pageProducts = sortedProducts.slice(start, end);
+
+    // 渲染当前页产品
+    tbody.innerHTML = pageProducts.map(product => `
         <tr>
             <td><input type="checkbox" class="product-checkbox" data-id="${product.id}"></td>
-            <td>${getLocalizedText(product.name)}</td>
-            <td>${product.chemicalName || '-'}</td>
+            <td class="long-text" title="${product.chemicalName || ''}">${product.chemicalName || '-'}</td>
+            <td class="long-text" title="${product.smiles || ''}">${product.smiles || '-'}</td>
             <td>${product.casNumber || '-'}</td>
             <td>${product.catalogNumber || '-'}</td>
             <td>${product.purity || '-'}</td>
@@ -398,6 +425,50 @@ function renderProductsTable() {
             </td>
         </tr>
     `).join('');
+
+    // 更新分页控件
+    updatePagination(totalPages, sortedProducts.length);
+
+    // 确保分页控件可见
+    const pagination = document.getElementById('productsPagination');
+    if (pagination) {
+        pagination.style.display = 'flex';
+    }
+}
+
+function updatePagination(totalPages, totalItems) {
+    const pageInfo = document.getElementById('pageInfo');
+    const prevBtn = document.getElementById('prevPageBtn');
+    const nextBtn = document.getElementById('nextPageBtn');
+
+    if (pageInfo) {
+        pageInfo.textContent = `第 ${currentPage} / ${totalPages} 页 (共 ${totalItems} 条)`;
+    }
+    if (prevBtn) {
+        prevBtn.disabled = currentPage <= 1;
+    }
+    if (nextBtn) {
+        nextBtn.disabled = currentPage >= totalPages;
+    }
+}
+
+function changePage(direction) {
+    // 确保products数组存在
+    if (!siteData) {
+        siteData = {};
+    }
+    if (!siteData.products) {
+        siteData.products = [];
+    }
+    const totalPages = Math.max(1, Math.ceil(siteData.products.length / PRODUCTS_PER_PAGE));
+    const newPage = currentPage + direction;
+
+    if (newPage >= 1 && newPage <= totalPages) {
+        currentPage = newPage;
+        renderProductsTable();
+        // 滚动到表格顶部
+        document.querySelector('.table-container')?.scrollIntoView({ behavior: 'smooth' });
+    }
 }
 
 function initProductSearch() {
@@ -411,8 +482,16 @@ function initProductSearch() {
 
 function filterProducts(query) {
     const tbody = document.getElementById('productsTable');
-    if (!tbody || !siteData?.products) return;
-    
+    if (!tbody) return;
+
+    // 确保products数组存在
+    if (!siteData) {
+        siteData = {};
+    }
+    if (!siteData.products) {
+        siteData.products = [];
+    }
+
     const q = query.toLowerCase().trim();
     const filtered = q ? siteData.products.filter(p => {
         const name = getLocalizedText(p.name).toLowerCase();
@@ -420,19 +499,20 @@ function filterProducts(query) {
         const catalog = (p.catalogNumber || '').toLowerCase();
         return name.includes(q) || cas.includes(q) || catalog.includes(q);
     }) : siteData.products;
-    
+
     // 按热门产品优先排序
     const sortedFiltered = [...filtered].sort((a, b) => {
         if (a.isHot && !b.isHot) return -1;
         if (!a.isHot && b.isHot) return 1;
         return 0;
     });
-    
+
+    // 搜索时显示所有结果，不分页
     tbody.innerHTML = sortedFiltered.map(product => `
         <tr>
             <td><input type="checkbox" class="product-checkbox" data-id="${product.id}"></td>
-            <td>${getLocalizedText(product.name)}</td>
-            <td>${product.chemicalName || '-'}</td>
+            <td class="long-text" title="${product.chemicalName || ''}">${product.chemicalName || '-'}</td>
+            <td class="long-text" title="${product.smiles || ''}">${product.smiles || '-'}</td>
             <td>${product.casNumber || '-'}</td>
             <td>${product.catalogNumber || '-'}</td>
             <td>${product.purity || '-'}</td>
@@ -448,6 +528,17 @@ function filterProducts(query) {
             </td>
         </tr>
     `).join('');
+
+    // 搜索时隐藏分页控件
+    const pagination = document.getElementById('productsPagination');
+    if (pagination) {
+        pagination.style.display = q ? 'none' : 'flex';
+    }
+
+    // 清空搜索时恢复分页显示
+    if (!q) {
+        renderProductsTable();
+    }
 }
 
 function initAddProductBtn() {
@@ -462,15 +553,17 @@ function initAddProductBtn() {
 function openProductModal(productId = null) {
     const modal = document.getElementById('productModal');
     const title = document.getElementById('productModalTitle');
-    
+
+    // 重置图片上传区域
+    resetImageUpload();
+
     if (productId) {
         title.textContent = '编辑产品';
         const product = siteData.products.find(p => p.id === productId);
         if (product) {
             document.getElementById('productId').value = product.id;
-            document.getElementById('productName').value = getLocalizedText(product.name);
-            document.getElementById('productNameEn').value = product.name?.en || '';
             document.getElementById('productChemicalName').value = product.chemicalName || '';
+            document.getElementById('productSmiles').value = product.smiles || '';
             document.getElementById('productPrice').value = product.price || '';
             document.getElementById('productCasNumber').value = product.casNumber || '';
             document.getElementById('productCatalogNumber').value = product.catalogNumber || '';
@@ -479,6 +572,12 @@ function openProductModal(productId = null) {
             document.getElementById('productDesc').value = getLocalizedText(product.desc);
             document.getElementById('productDescEn').value = product.desc?.en || '';
             document.getElementById('productIsHot').checked = product.isHot || false;
+
+            // 加载产品图片
+            if (product.image) {
+                document.getElementById('productImage').value = product.image;
+                showImagePreview(product.image);
+            }
         }
     } else {
         title.textContent = '添加产品';
@@ -486,8 +585,102 @@ function openProductModal(productId = null) {
         document.getElementById('productId').value = '';
         document.getElementById('productIsHot').checked = false;
     }
-    
+
     modal.style.display = 'flex';
+}
+
+// 图片上传相关函数
+function resetImageUpload() {
+    document.getElementById('productImage').value = '';
+    document.getElementById('productImageInput').value = '';
+    document.getElementById('productImagePreview').innerHTML = '<span class="image-placeholder">📷 点击上传图片</span>';
+    document.getElementById('removeImageBtn').style.display = 'none';
+}
+
+function showImagePreview(imageSrc) {
+    const preview = document.getElementById('productImagePreview');
+    preview.innerHTML = `<img src="${imageSrc}" alt="产品图片">`;
+    document.getElementById('removeImageBtn').style.display = 'inline-block';
+}
+
+function initImageUpload() {
+    const imageInput = document.getElementById('productImageInput');
+    const imagePreview = document.getElementById('productImagePreview');
+    const removeBtn = document.getElementById('removeImageBtn');
+
+    if (imageInput) {
+        imageInput.addEventListener('change', handleImageUpload);
+    }
+
+    if (imagePreview) {
+        imagePreview.addEventListener('click', () => {
+            imageInput.click();
+        });
+    }
+
+    if (removeBtn) {
+        removeBtn.addEventListener('click', () => {
+            resetImageUpload();
+        });
+    }
+}
+
+function handleImageUpload(e) {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    // 检查文件类型
+    if (!file.type.startsWith('image/')) {
+        alert('请选择图片文件！');
+        return;
+    }
+
+    // 检查文件大小（最大 5MB）
+    if (file.size > 5 * 1024 * 1024) {
+        alert('图片大小不能超过 5MB！');
+        return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = function(event) {
+        const img = new Image();
+        img.onload = function() {
+            // 压缩图片
+            const canvas = document.createElement('canvas');
+            const ctx = canvas.getContext('2d');
+
+            // 计算压缩后的尺寸（最大宽度 800px）
+            let width = img.width;
+            let height = img.height;
+            const maxWidth = 800;
+
+            if (width > maxWidth) {
+                height = (height * maxWidth) / width;
+                width = maxWidth;
+            }
+
+            canvas.width = width;
+            canvas.height = height;
+            ctx.drawImage(img, 0, 0, width, height);
+
+            // 转换为 JPEG，质量 0.7
+            const compressedData = canvas.toDataURL('image/jpeg', 0.7);
+
+            // 检查压缩后的大小
+            const sizeInMB = (compressedData.length * 3 / 4) / 1024 / 1024;
+            if (sizeInMB > 1) {
+                // 如果还是太大，进一步压缩
+                const furtherCompressed = canvas.toDataURL('image/jpeg', 0.5);
+                document.getElementById('productImage').value = furtherCompressed;
+                showImagePreview(furtherCompressed);
+            } else {
+                document.getElementById('productImage').value = compressedData;
+                showImagePreview(compressedData);
+            }
+        };
+        img.src = event.target.result;
+    };
+    reader.readAsDataURL(file);
 }
 
 function initProductForm() {
@@ -502,13 +695,15 @@ function initProductForm() {
 
 async function saveProduct() {
     const productId = document.getElementById('productId').value;
+    const chemicalName = document.getElementById('productChemicalName').value;
     const product = {
         id: productId ? parseInt(productId) : Date.now(),
         name: {
-            zh: document.getElementById('productName').value,
-            en: document.getElementById('productNameEn').value || document.getElementById('productName').value
+            zh: chemicalName,
+            en: chemicalName
         },
-        chemicalName: document.getElementById('productChemicalName').value,
+        chemicalName: chemicalName,
+        smiles: document.getElementById('productSmiles').value,
         price: document.getElementById('productPrice').value,
         casNumber: document.getElementById('productCasNumber').value,
         catalogNumber: document.getElementById('productCatalogNumber').value,
@@ -519,19 +714,18 @@ async function saveProduct() {
             en: document.getElementById('productDescEn').value || document.getElementById('productDesc').value
         },
         isHot: document.getElementById('productIsHot').checked,
-        icon: '🧬'
+        image: document.getElementById('productImage').value || null
     };
-    
+
     if (productId) {
         const index = siteData.products.findIndex(p => p.id === parseInt(productId));
         if (index !== -1) {
-            product.icon = siteData.products[index].icon;
             siteData.products[index] = product;
         }
     } else {
         siteData.products.push(product);
     }
-    
+
     await saveData();
     closeProductModal();
     renderProductsTable();
@@ -544,8 +738,17 @@ function editProduct(productId) {
 
 async function deleteProduct(productId) {
     if (confirm('确定要删除这个产品吗？')) {
+        const originalProducts = [...siteData.products];
         siteData.products = siteData.products.filter(p => p.id !== productId);
-        await saveData();
+
+        const saved = await saveData();
+        if (!saved) {
+            alert('保存失败，请重试！');
+            siteData.products = originalProducts;
+            renderProductsTable();
+            return;
+        }
+
         renderProductsTable();
     }
 }
@@ -561,8 +764,12 @@ async function toggleProductHot(productId) {
 
 function toggleSelectAll() {
     const selectAll = document.getElementById('selectAllProducts');
+    if (!selectAll) return;
+
     const checkboxes = document.querySelectorAll('.product-checkbox');
-    checkboxes.forEach(cb => cb.checked = selectAll.checked);
+    checkboxes.forEach(cb => {
+        cb.checked = selectAll.checked;
+    });
 }
 
 async function batchDeleteProducts() {
@@ -571,12 +778,87 @@ async function batchDeleteProducts() {
         alert('请先选择要删除的产品！');
         return;
     }
-    
+
     if (confirm(`确定要删除选中的 ${checkboxes.length} 个产品吗？`)) {
-        const ids = Array.from(checkboxes).map(cb => parseInt(cb.getAttribute('data-id')));
-        siteData.products = siteData.products.filter(p => !ids.includes(p.id));
-        await saveData();
+        // 获取选中的ID（支持字符串和数字ID）
+        const ids = Array.from(checkboxes).map(cb => cb.getAttribute('data-id'));
+        const idsToDelete = new Set(ids);
+
+        // 备份原始数据
+        const originalProducts = siteData.products ? [...siteData.products] : [];
+
+        // 过滤掉要删除的产品
+        if (siteData.products) {
+            siteData.products = siteData.products.filter(p => {
+                const pid = String(p.id);
+                return !idsToDelete.has(pid);
+            });
+        } else {
+            siteData.products = [];
+        }
+
+        // 重置全选框
+        const selectAll = document.getElementById('selectAllProducts');
+        if (selectAll) {
+            selectAll.checked = false;
+        }
+
+        // 保存到服务器，检查是否成功
+        const saved = await saveData();
+
+        if (!saved) {
+            // 保存失败，恢复原始数据
+            alert('保存失败，请重试！');
+            siteData.products = originalProducts;
+            renderProductsTable();
+            return;
+        }
+
         renderProductsTable();
+    }
+}
+
+async function deleteAllProducts() {
+    // 确保products数组存在
+    if (!siteData) {
+        siteData = {};
+    }
+    if (!siteData.products) {
+        siteData.products = [];
+    }
+
+    const productCount = siteData.products.length;
+    if (productCount === 0) {
+        alert('没有产品可以删除！');
+        return;
+    }
+
+    if (confirm(`确定要删除所有 ${productCount} 个产品吗？此操作不可恢复！`)) {
+        // 备份原始数据
+        const originalProducts = [...siteData.products];
+
+        // 清空产品数组
+        siteData.products = [];
+
+        // 重置全选框
+        const selectAll = document.getElementById('selectAllProducts');
+        if (selectAll) {
+            selectAll.checked = false;
+        }
+
+        // 保存到服务器，检查是否成功
+        const saved = await saveData();
+
+        if (!saved) {
+            // 保存失败，恢复原始数据
+            alert('保存失败，请重试！');
+            siteData.products = originalProducts;
+            renderProductsTable();
+            return;
+        }
+
+        renderProductsTable();
+        alert(`成功删除所有 ${productCount} 个产品！`);
     }
 }
 
@@ -606,35 +888,263 @@ function initExcelImport() {
 
 async function handleExcelImport(file) {
     try {
-        const formData = new FormData();
-        formData.append('excelFile', file);
-        
-        const response = await fetch('/api/import/products', {
-            method: 'POST',
-            body: formData
-        });
-        
-        if (response.ok) {
-            const result = await response.json();
-            if (result.success) {
-                alert(result.message);
-                await loadData();
-                renderProductsTable();
-            } else {
-                alert('导入失败: ' + result.error);
-            }
-        } else {
-            const error = await response.json();
-            alert('导入失败: ' + error.error);
+        // 显示进度提示
+        const statusDiv = document.createElement('div');
+        statusDiv.id = 'importStatus';
+        statusDiv.style.cssText = 'position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);background:white;padding:20px;border-radius:8px;box-shadow:0 2px 10px rgba(0,0,0,0.3);z-index:10000;font-size:16px;';
+        document.body.appendChild(statusDiv);
+
+        // 进度和状态文本变量
+        let progress, statusText;
+
+        function updateStatus(html) {
+            statusDiv.innerHTML = html;
+            progress = document.getElementById('importProgress');
+            statusText = document.getElementById('importStatusText');
         }
+
+        updateStatus('正在读取文件...<br><progress id="importProgress" value="0" max="100" style="width:300px;margin-top:10px;"></progress><br><span id="importStatusText">0%</span>');
+
+        const reader = new FileReader();
+        reader.onload = async function(e) {
+            try {
+                updateStatus('正在解析Excel文件...<br><progress id="importProgress" value="30" max="100" style="width:300px;margin-top:10px;"></progress>');
+
+                const data = new Uint8Array(e.target.result);
+                const workbook = XLSX.read(data, { type: 'array', cellNF: true, cellText: false });
+
+                const firstSheetName = workbook.SheetNames[0];
+                const worksheet = workbook.Sheets[firstSheetName];
+                const jsonData = XLSX.utils.sheet_to_json(worksheet, { defval: '' });
+
+                if (jsonData.length === 0) {
+                    statusDiv.remove();
+                    alert('Excel文件为空！');
+                    return;
+                }
+
+                const totalRows = jsonData.length;
+                updateStatus(`正在导入...<br><progress id="importProgress" value="0" max="${totalRows}" style="width:300px;margin-top:10px;"></progress><br><span id="importStatusText">0 / ${totalRows}</span>`);
+
+                // 先尝试使用新的批量导入API
+                let useNewAPI = true;
+                try {
+                    const controller = new AbortController();
+                    const timeoutId = setTimeout(() => controller.abort(), 5000);
+
+                    const testResponse = await fetch('/api/import/batch', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ products: [{ chemicalName: 'test' }], mode: 'append' }),
+                        signal: controller.signal
+                    });
+
+                    clearTimeout(timeoutId);
+
+                    // 检查是否返回JSON
+                    const contentType = testResponse.headers.get('content-type');
+                    if (!testResponse.ok || !contentType || !contentType.includes('application/json')) {
+                        console.log('新API不可用，使用分批保存模式');
+                        useNewAPI = false;
+                    }
+                } catch (e) {
+                    console.log('新API不可用，使用分批保存模式', e.message);
+                    useNewAPI = false;
+                }
+
+                if (useNewAPI) {
+                    // 使用新的批量导入API
+                    const BATCH_SIZE = 100;
+                    let successCount = 0;
+                    let errorCount = 0;
+
+                    for (let i = 0; i < jsonData.length; i += BATCH_SIZE) {
+                        const batch = jsonData.slice(i, i + BATCH_SIZE);
+                        const products = [];
+
+                        for (const row of batch) {
+                            const product = parseExcelRow(row);
+                            if (product.chemicalName) {
+                                product.id = Date.now() + Math.random() + Math.random();
+                                products.push(product);
+                            } else {
+                                errorCount++;
+                            }
+                        }
+
+                        try {
+                            const controller = new AbortController();
+                            const timeoutId = setTimeout(() => controller.abort(), 30000);
+
+                            const response = await fetch('/api/import/batch', {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({ products, mode: i === 0 ? 'replace' : 'append' }),
+                                signal: controller.signal
+                            });
+
+                            clearTimeout(timeoutId);
+
+                            if (!response.ok) {
+                                throw new Error('服务器返回错误: ' + response.status);
+                            }
+
+                            const result = await response.json();
+                            if (result.success) {
+                                successCount += products.length;
+                            }
+                        } catch (e) {
+                            statusDiv.remove();
+                            alert('导入失败: ' + e.message);
+                            return;
+                        }
+
+                        if (progress) progress.value = Math.min(i + BATCH_SIZE, totalRows);
+                        if (statusText) statusText.textContent = `${Math.min(i + BATCH_SIZE, totalRows)} / ${totalRows}`;
+                        await new Promise(resolve => setTimeout(resolve, 50));
+                    }
+
+                    await loadData();
+                    renderProductsTable();
+                    statusDiv.remove();
+                    alert(`导入完成！\n成功: ${successCount} 个产品\n失败: ${errorCount} 个产品`);
+                } else {
+                    // 使用旧的保存方式（但跳过重复检查以提高性能）
+                    const BATCH_SIZE = 50;
+                    let successCount = 0;
+                    let errorCount = 0;
+
+                    // 先获取现有产品ID集合用于去重（只获取一次）
+                    const existingIds = new Set(siteData.products.map(p => p.catalogNumber || p.casNumber).filter(Boolean));
+
+                    for (let i = 0; i < jsonData.length; i += BATCH_SIZE) {
+                        const batch = jsonData.slice(i, i + BATCH_SIZE);
+
+                        for (const row of batch) {
+                            const product = parseExcelRow(row);
+
+                            if (!product.chemicalName) {
+                                errorCount++;
+                                continue;
+                            }
+
+                            // 简单去重检查
+                            const key = product.catalogNumber || product.casNumber;
+                            if (key && existingIds.has(key)) {
+                                errorCount++;
+                                continue;
+                            }
+
+                            product.id = Date.now() + Math.random();
+                            siteData.products.push(product);
+                            if (key) existingIds.add(key);
+                            successCount++;
+                        }
+
+                        // 分批保存到服务器
+                        await saveData();
+
+                        if (progress) progress.value = Math.min(i + BATCH_SIZE, totalRows);
+                        if (statusText) statusText.textContent = `${Math.min(i + BATCH_SIZE, totalRows)} / ${totalRows}`;
+                        await new Promise(resolve => setTimeout(resolve, 100));
+                    }
+
+                    await loadData();
+                    renderProductsTable();
+                    statusDiv.remove();
+                    alert(`导入完成！\n成功: ${successCount} 个产品\n失败/跳过: ${errorCount} 个产品`);
+                }
+
+                document.getElementById('excelImport').value = '';
+            } catch (err) {
+                statusDiv.remove();
+                console.error('导入错误:', err);
+                alert('导入失败: ' + err.message);
+            }
+        };
+        reader.readAsArrayBuffer(file);
     } catch (error) {
         console.error('导入错误:', error);
         alert('导入失败: ' + error.message);
     }
 }
 
+function parseExcelRow(row) {
+    // 支持多种列名格式
+    const getValue = (keys) => {
+        for (const key of keys) {
+            if (row[key] !== undefined) return row[key];
+        }
+        return '';
+    };
+
+    const chemicalName = getValue(['化学名称', 'Chemical Name', '化学名']);
+
+    return {
+        name: {
+            zh: chemicalName,
+            en: chemicalName
+        },
+        chemicalName: chemicalName,
+        smiles: getValue(['SMILES', 'Smiles', 'smiles']),
+        price: getValue(['价格', 'Price', '单价']),
+        casNumber: getValue(['CAS号', 'CAS', 'CAS Number']),
+        catalogNumber: getValue(['货号', 'Catalog Number', '产品编号', '编号']),
+        specification: getValue(['规格', 'Specification', '包装规格']),
+        purity: getValue(['纯度', 'Purity', '纯度(%)']),
+        desc: {
+            zh: getValue(['产品描述(中文)', '描述', 'Description (Chinese)', 'Description']),
+            en: getValue(['产品描述(英文)', '英文描述', 'Description (English)'])
+        },
+        isHot: getValue(['热门产品', '热门', 'Is Hot', 'Hot']) === '是' ||
+               getValue(['热门产品', '热门', 'Is Hot', 'Hot']) === 'Yes' ||
+               getValue(['热门产品', '热门', 'Is Hot', 'Hot']) === true,
+        image: null
+    };
+}
+
 function downloadExcelTemplate() {
-    window.location.href = '/api/export/template';
+    // 定义模板数据结构
+    const templateData = [
+        {
+            '化学名称': 'Proteinase K',
+            'SMILES': '',
+            '价格': '¥500/100mg',
+            'CAS号': '39450-01-6',
+            '货号': 'PK-001',
+            '规格': '100mg',
+            '纯度': '≥95% (SDS-PAGE)',
+            '产品描述(中文)': '用于分子生物学实验的蛋白酶',
+            '产品描述(英文)': 'Protease for molecular biology experiments',
+            '热门产品': '是'
+        }
+    ];
+
+    // 创建工作簿
+    const wb = XLSX.utils.book_new();
+    const ws = XLSX.utils.json_to_sheet(templateData);
+
+    // 设置列宽
+    const colWidths = [
+        { wch: 20 }, // 产品名称(中文)
+        { wch: 25 }, // 产品名称(英文)
+        { wch: 20 }, // 化学名称
+        { wch: 15 }, // 价格
+        { wch: 15 }, // CAS号
+        { wch: 12 }, // 货号
+        { wch: 12 }, // 规格
+        { wch: 20 }, // 纯度
+        { wch: 35 }, // 产品描述(中文)
+        { wch: 40 }, // 产品描述(英文)
+        { wch: 10 }  // 热门产品
+    ];
+    ws['!cols'] = colWidths;
+
+    // 添加工作表到工作簿
+    XLSX.utils.book_append_sheet(wb, ws, '产品导入模板');
+
+    // 下载文件
+    XLSX.writeFile(wb, '产品导入模板.xlsx');
 }
 
 function renderNewsTab() {
